@@ -4,6 +4,7 @@ from app.api.v1.users import router as users_router
 from app.api.v1.knowledge_bases import router as kbs_router
 from app.api.v1.documents import router as docs_router
 from app.api.v1.search import router as search_router
+from app.api.v1.rag import router as rag_router
 from app.core.config import settings
 from app.core.logging import configure_logging
 
@@ -20,6 +21,7 @@ app.include_router(users_router, prefix="/v1", tags=["Users"])
 app.include_router(kbs_router, prefix="/v1", tags=["Knowledge Bases"])
 app.include_router(docs_router, prefix="/v1", tags=["Documents"])
 app.include_router(search_router, prefix="/v1", tags=["Search"])
+app.include_router(rag_router, prefix="/v1", tags=["RAG"])
 
 @app.get("/", tags=["Root"])
 async def read_root():
