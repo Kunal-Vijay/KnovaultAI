@@ -1,25 +1,6 @@
-[tool.poetry]
-name = "ai-engineering-assistant"
-version = "0.1.0"
-description = "AI Engineering Knowledge Assistant"
-authors = ["Your Name <you@example.com>"]
-readme = "README.md"
+[tool.ruff]
+line-length = 88
+target-version = "py312"
 
-[tool.poetry.dependencies]
-python = "^3.12"
-fastapi = "^0.104.1"
-uvicorn = {extras = ["standard"], version = "^0.23.2"}
-sqlalchemy = "^2.0.23"
-alembic = "^1.12.1"
-psycopg2-binary = "^2.9.9"
-python-dotenv = "^1.0.0"
-pydantic-settings = "^2.1.0" # For managing settings from environment variables
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.3"
-httpx = "^0.25.1"
-ruff = "^0.1.6" # Code linter and formatter
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.ruff.lint]
+select = ["E", "F", "I"]

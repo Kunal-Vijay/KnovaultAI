@@ -17,3 +17,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Import all models to ensure they are registered with SQLAlchemy Base.metadata
+from app import models

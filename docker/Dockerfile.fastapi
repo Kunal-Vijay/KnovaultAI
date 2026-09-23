@@ -2,9 +2,9 @@ FROM python:3.12-alpine
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock* ./ # poetry.lock might not exist yet
+COPY requirements.txt ./
 
-RUN pip install poetry && poetry install --no-root --no-dev
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./app /app/app
 

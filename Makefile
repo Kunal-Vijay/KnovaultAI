@@ -1,24 +1,24 @@
 install:
-	poetry install
+	pip install -r requirements-dev.txt
 
 run:
-	docker-compose up --build
+	docker compose up --build
 
 test:
-	poetry run pytest
+	pytest
 
-linit:
-	poetry run ruff check app tests
+lint:
+	ruff check app tests
 
 format:
-	poetry run ruff format app tests
+	ruff format app tests
 
 init-db:
-	docker-compose exec fastapi_app sh -c "alembic init -t async migrations"
+	docker compose exec fastapi_app sh -c "alembic init -t async migrations"
 	migrate-db
 
 migrate-db:
-	docker-compose exec fastapi_app alembic upgrade head
+	docker compose exec fastapi_app alembic upgrade head
 
 create-migration:
-	docker-compose exec fastapi_app alembic revision --autogenerate -m "$(MESSAGE)"
+	docker compose exec fastapi_app alembic revision --autogenerate -m "$(MESSAGE)"

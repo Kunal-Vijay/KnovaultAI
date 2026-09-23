@@ -12,7 +12,7 @@ This phase establishes the foundational elements of the project, including:
 *   **FastAPI**: A modern, fast (high-performance) web framework for building APIs.
 *   **PostgreSQL**: A powerful, open-source relational database.
 *   **Docker Compose**: For defining and running multi-container Docker applications locally.
-*   **Poetry**: For dependency management.
+*   **pip / requirements.txt**: For dependency management.
 *   **Alembic**: For managing database migrations.
 *   **Basic API Endpoints**: `/health` and `/ready` for service status checks.
 *   **Structured Logging**: For better observability.
@@ -24,7 +24,7 @@ This phase establishes the foundational elements of the project, including:
 
 *   Docker
 *   Docker Compose
-*   Poetry (optional, but recommended for local development outside Docker)
+*   Python 3.12+ (optional, for local development outside Docker)
 
 ### Setup
 
@@ -43,7 +43,14 @@ This phase establishes the foundational elements of the project, including:
     cp .env.example .env
     ```
 
-3.  **Build and run services with Docker Compose**:
+3.  **Install dependencies locally (optional)**:
+
+    ```bash
+    python -m venv .venv && source .venv/bin/activate
+    make install
+    ```
+
+4.  **Build and run services with Docker Compose**:
 
     ```bash
     docker-compose up --build -d
@@ -51,7 +58,7 @@ This phase establishes the foundational elements of the project, including:
 
     This will start the FastAPI application and the PostgreSQL database.
 
-4.  **Initialize Alembic (first time only)**:
+5.  **Initialize Alembic (first time only)**:
 
     ```bash
     make init-db
@@ -110,6 +117,8 @@ ai-engineering-assistant/
 │   └── Dockerfile.postgres
 ├── .env.example
 ├── docker-compose.yml
+├── requirements.txt
+├── requirements-dev.txt
 ├── pyproject.toml
 ├── README.md
 └── Makefile
