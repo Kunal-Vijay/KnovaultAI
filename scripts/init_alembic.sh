@@ -1,3 +1,5 @@
 #!/bin/bash
 
-alembic init -t async migrations
+# Alembic is checked in at repo root (alembic.ini + migrations/).
+# Run from project root with DATABASE_URL set, e.g. via docker compose.
+alembic upgrade head

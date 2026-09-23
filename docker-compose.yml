@@ -7,6 +7,8 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/app/app
+      - ./alembic.ini:/app/alembic.ini
+      - ./migrations:/app/migrations
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/ai_knowledge_base
     depends_on:

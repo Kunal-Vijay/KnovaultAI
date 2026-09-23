@@ -11,5 +11,5 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    knowledge_bases = relationship("KnowledgeBase", back_populates="owner")
+    knowledge_bases = relationship("KnowledgeBase", back_populates="owner", cascade="all, delete-orphan")
 

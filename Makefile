@@ -14,7 +14,6 @@ format:
 	ruff format app tests
 
 init-db:
-	docker compose exec fastapi_app sh -c "alembic init -t async migrations"
 	migrate-db
 
 migrate-db:

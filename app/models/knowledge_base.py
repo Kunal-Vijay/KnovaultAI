@@ -13,5 +13,5 @@ class KnowledgeBase(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="knowledge_bases")
-    documents = relationship("Document", back_populates="knowledge_base")
+    documents = relationship("Document", back_populates="knowledge_base", cascade="all, delete-orphan")
 
