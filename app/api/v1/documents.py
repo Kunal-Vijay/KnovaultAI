@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.session import get_db
-from app.schemas.document import Document, DocumentCreate
+from app.schemas.document import Document, DocumentCreate, DocumentUploadRequest
 from app.services import document as doc_service
 from app.services import knowledge_base as kb_service
+from app.services.ingestion import IngestionService
 
 router = APIRouter()
 
@@ -13,13 +14,13 @@ router = APIRouter()
 def create_doc_for_kb(
     user_id: int,
     kb_id: int,
-    doc: DocumentCreate,
+    doc_create: DocumentCreate,
     db: Session = Depends(get_db)
 ):
     db_kb = kb_service.get_knowledge_base(db, kb_id=kb_id)
     if db_kb is None or db_kb.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge Base not found for this user")
-    return doc_service.create_document(db=db, doc=doc, kb_id=kb_id)
+    return doc_service.create_document(db=db, doc=doc_create, kb_id=kb_id)
 
 @router.get("/users/{user_id}/knowledge_bases/{kb_id}/documents/", response_model=List[Document])
 def read_docs_for_kb(
@@ -49,3 +50,23 @@ def read_doc_for_kb(
     if db_doc is None or db_doc.knowledge_base_id != kb_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found in this Knowledge Base")
     return db_doc
+
+@router.post("/users/{user_id}/knowledge_bases/{kb_id}/documents/upload", response_model=Document, status_code=status.HTTP_202_ACCEPTED)
+async def upload_document_for_kb(
+    user_id: int,
+    kb_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    db_kb = kb_service.get_knowledge_base(db, kb_id=kb_id)
+    if db_kb is None or db_kb.owner_id != user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge Base not found for this user")
+
+    # Read file content asynchronously
+    file_content = await file.read()
+
+    ingestion_service = IngestionService()
+    new_document = await ingestion_service.upload_and_ingest_document(
+        db=db, user_id=user_id, kb_id=kb_id, filename=file.filename, file_content=file_content
+    )
+    return new_document
