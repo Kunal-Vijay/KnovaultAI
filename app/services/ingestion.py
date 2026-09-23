@@ -4,6 +4,7 @@ from typing import Dict, Any
 from sqlalchemy.orm import Session
 
 from app.core.storage import get_storage_client
+from app.core.embedding import embedding_service # Import the embedding service
 from app.db.session import get_db
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
@@ -44,14 +45,16 @@ async def ingest_document_background_task(doc_id: int, file_content: bytes):
         chunker = get_chunker()
         chunks_content = chunker.chunk(text_content)
 
-        # 4. Create DocumentChunks
+        # 4. Create DocumentChunks and generate embeddings
         for i, chunk_content in enumerate(chunks_content):
+            embedding = embedding_service.embed_text(chunk_content)
             db_chunk = DocumentChunk(
                 document_id=document.id,
                 content=chunk_content,
                 source=document.filename, # Or a more specific source if available
                 page_number=extracted_metadata.get("page_number"),
                 section=extracted_metadata.get("section"),
+                embedding=embedding
             )
             db.add(db_chunk)
         

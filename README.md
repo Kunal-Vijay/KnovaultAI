@@ -12,7 +12,7 @@ This phase establishes the foundational elements of the project, including:
 *   **FastAPI**: A modern, fast (high-performance) web framework for building APIs.
 *   **PostgreSQL**: A powerful, open-source relational database.
 *   **Docker Compose**: For defining and running multi-container Docker applications locally.
-*   **pip / requirements.txt**: For dependency management.
+*   **pip and requirements.txt**: For dependency management.
 *   **Alembic**: For managing database migrations.
 *   **Basic API Endpoints**: `/health` and `/ready` for service status checks.
 *   **Structured Logging**: For better observability.
@@ -24,7 +24,7 @@ This phase establishes the foundational elements of the project, including:
 
 *   Docker
 *   Docker Compose
-*   Python 3.12+ (optional, for local development outside Docker)
+*   Python 3.12 (optional, if running locally outside Docker)
 
 ### Setup
 
@@ -43,28 +43,33 @@ This phase establishes the foundational elements of the project, including:
     cp .env.example .env
     ```
 
-3.  **Install dependencies locally (optional)**:
+3.  **Build and run services with Docker Compose**:
 
     ```bash
-    python -m venv .venv && source .venv/bin/activate
-    make install
-    ```
-
-4.  **Build and run services with Docker Compose**:
-
-    ```bash
-    docker-compose up --build -d
+    docker compose up --build -d
     ```
 
     This will start the FastAPI application and the PostgreSQL database.
 
-5.  **Initialize Alembic (first time only)**:
+4.  **Initialize Alembic (first time only)**:
 
     ```bash
-    make init-db
+    docker compose exec fastapi_app sh -c "alembic init -t async migrations"
     ```
 
-    This command will initialize Alembic and apply any existing migrations.
+    This command will initialize Alembic and create the `migrations` directory and `alembic.ini` file if they don't exist. *If it says "Directory migrations already exists and is not empty", you can skip this step and proceed.* 
+
+5.  **Create the initial migration for Phase 2 & 3 models**:
+
+    ```bash
+    docker compose exec fastapi_app sh -c "alembic revision --autogenerate -m \"Create user, knowledge base, document, document chunk tables and ingestion fields\""
+    ```
+
+6.  **Apply the migrations**: 
+
+    ```bash
+    docker compose exec fastapi_app alembic upgrade head
+    ```
 
 ### Accessing the Application
 
@@ -74,7 +79,7 @@ This phase establishes the foundational elements of the project, including:
 
 ### Database Migrations
 
-*   **Create a new migration**: `make create-migration MESSAGE="Your migration message"`
+*   **Create a new migration**: `MESSAGE="Your migration message" make create-migration`
 *   **Apply migrations**: `make migrate-db`
 
 ### Testing
@@ -94,16 +99,40 @@ ai-engineering-assistant/
 │   ├── main.py
 │   ├── api/
 │   │   └── v1/
-│   │       └── health.py
+│   │       ├── documents.py
+│   │       ├── health.py
+│   │       ├── knowledge_bases.py
+│   │       └── users.py
 │   ├── core/
 │   │   ├── config.py
-│   │   └── logging.py
+│   │   ├── embedding.py
+│   │   ├── logging.py
+│   │   └── storage.py
 │   ├── db/
 │   │   └── session.py
+│   ├── ingestion/
+│   │   ├── chunkers/
+│   │   │   └── __init__.py
+│   │   ├── metadata_extractors/
+│   │   │   └── __init__.py
+│   │   └── parsers/
+│   │       └── __init__.py
 │   ├── models/
+│   │   ├── __init__.py
+│   │   ├── document.py
+│   │   ├── document_chunk.py
+│   │   ├── knowledge_base.py
+│   │   └── user.py
 │   ├── schemas/
-│   ├── services/
-│   └── utils/
+│   │   ├── document.py
+│   │   ├── document_chunk.py
+│   │   ├── knowledge_base.py
+│   │   └── user.py
+│   └── services/
+│       ├── document.py
+│       ├── ingestion.py
+│       ├── knowledge_base.py
+│       └── user.py
 │
 ├── tests/
 │   ├── conftest.py
@@ -118,8 +147,6 @@ ai-engineering-assistant/
 ├── .env.example
 ├── docker-compose.yml
 ├── requirements.txt
-├── requirements-dev.txt
-├── pyproject.toml
 ├── README.md
 └── Makefile
 ```

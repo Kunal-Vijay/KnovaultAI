@@ -1,19 +1,20 @@
 install:
-	pip install -r requirements-dev.txt
+	pip install -r requirements.txt
 
 run:
-	docker compose up --build
+	docker compose up --build -d
 
 test:
 	pytest
 
-lint:
+linit:
 	ruff check app tests
 
 format:
 	ruff format app tests
 
 init-db:
+	docker compose exec fastapi_app sh -c "alembic init -t async migrations"
 	migrate-db
 
 migrate-db:
