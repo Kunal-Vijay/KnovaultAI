@@ -1,7 +1,7 @@
 from typing import List
 from sqlalchemy.orm import Session
 
-from app.core.llm import mock_llm_client
+from app.core.llm import llm_gateway # Import the LLM gateway
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
 from app.schemas.rag import RAGRequest, RAGResponse, Citation
@@ -52,8 +52,8 @@ class RAGService:
         # 3. Build prompt for LLM
         prompt = self.prompt_builder.build_prompt(request.question, context)
 
-        # 4. Get response from LLM (using mock client for now)
-        llm_answer = mock_llm_client.generate_response(prompt)
+        # 4. Get response from LLM (using LLM Gateway)
+        llm_answer = llm_gateway.generate_response(prompt)
 
         # 5. Extract citations (simple placeholder for now)
         citations = []
