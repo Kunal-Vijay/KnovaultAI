@@ -4,7 +4,7 @@ from typing import List
 
 from app.db.session import get_db
 from app.schemas.search import SearchRequest, SearchResponse
-from app.services.search import semantic_search_service
+from app.services.search import hybrid_search_service # Use the new hybrid search service
 from app.services.knowledge_base import get_knowledge_base
 
 router = APIRouter()
@@ -20,5 +20,5 @@ def search_knowledge_base(
     if db_kb is None or db_kb.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge Base not found for this user or unauthorized")
     
-    results = semantic_search_service.search(db, request)
+    results = hybrid_search_service.search(db, request)
     return SearchResponse(results=results)

@@ -14,6 +14,7 @@ class DocumentChunk(Base):
     page_number = Column(Integer, nullable=True) # Page number if applicable
     section = Column(String, nullable=True) # Section or heading if applicable
     embedding = Column(Vector(384), nullable=True) # Using 384 dimensions for all-MiniLM-L6-v2
+    content_tsvector = Column(Text, nullable=True) # Column for PostgreSQL tsvector
     created_at = Column(DateTime, default=datetime.utcnow)
 
     document = relationship("Document", back_populates="chunks")

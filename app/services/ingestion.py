@@ -2,6 +2,7 @@ import asyncio
 import mimetypes
 from typing import Dict, Any
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.core.storage import get_storage_client
 from app.core.embedding import embedding_service # Import the embedding service
@@ -57,6 +58,11 @@ async def ingest_document_background_task(doc_id: int, file_content: bytes):
                 embedding=embedding
             )
             db.add(db_chunk)
+            db.flush() # Flush to get chunk.id for tsvector update
+
+            # Update content_tsvector using raw SQL for PostgreSQL FTS
+            db.execute(text("UPDATE document_chunks SET content_tsvector = to_tsvector('english', :content) WHERE id = :chunk_id"),
+                       {"content": chunk_content, "chunk_id": db_chunk.id})
         
         document.status = "completed"
         db.add(document)
