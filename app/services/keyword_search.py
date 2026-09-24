@@ -9,11 +9,12 @@ class KeywordSearchService:
 
         # Perform keyword search using PostgreSQL FTS
         sql_query = text(
-            """SELECT dc.id, dc.document_id, dc.content, dc.source, dc.page_number, dc.section, dc.created_at, "
-            "ts_rank(dc.content_tsvector, to_tsquery('english', :tsquery)) AS score "
-            "FROM document_chunks AS dc JOIN documents AS d ON dc.document_id = d.id "
-            "WHERE d.knowledge_base_id = :kb_id AND dc.content_tsvector @@ to_tsquery('english', :tsquery) "
-            "ORDER BY score DESC LIMIT :top_k"""
+            """SELECT dc.id, dc.document_id, dc.content, dc.source, dc.page_number, dc.section, dc.created_at,
+            ts_rank(to_tsvector('english', dc.content), to_tsquery('english', :tsquery)) AS score
+            FROM document_chunks AS dc JOIN documents AS d ON dc.document_id = d.id
+            WHERE d.knowledge_base_id = :kb_id
+              AND to_tsvector('english', dc.content) @@ to_tsquery('english', :tsquery)
+            ORDER BY score DESC LIMIT :top_k"""
         )
 
         results = db.execute(sql_query, {

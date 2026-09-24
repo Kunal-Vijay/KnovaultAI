@@ -6,7 +6,7 @@ from app.core.llm import llm_gateway # Import the LLM gateway
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
 from app.schemas.rag import RAGRequest, RAGResponse, Citation
-from app.schemas.search import SearchResultItem
+from app.schemas.search import SearchRequest, SearchResultItem
 from app.services.search import hybrid_search_service # Use the hybrid search service
 from app.core.observability import tracer # Import tracer
 
@@ -19,7 +19,13 @@ class Retriever:
     def retrieve_chunks(self, db: Session, request: RAGRequest) -> List[SearchResultItem]:
         with tracer.start_as_current_span("rag_retriever.retrieve_chunks"):
             # Use the hybrid search service to get relevant chunks
-            search_results = self.hybrid_search_service.search(db, request)
+            search_request = SearchRequest(
+                knowledge_base_id=request.knowledge_base_id,
+                query=request.question,
+                keyword_query=request.question,
+                top_k=request.top_k,
+            )
+            search_results = self.hybrid_search_service.search(db, search_request)
             logger.info(f"Retrieved {len(search_results)} chunks for RAG request.")
             return search_results
 

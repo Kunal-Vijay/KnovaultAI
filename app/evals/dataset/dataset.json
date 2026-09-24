@@ -1,0 +1,16 @@
+{
+  "test_cases": [
+    {
+      "question": "What is the capital of France?",
+      "knowledge_base_id": 1,
+      "expected_sources": [],
+      "expected_answer_keywords": ["Paris"]
+    },
+    {
+      "question": "Who developed Python?",
+      "knowledge_base_id": 1,
+      "expected_sources": [],
+      "expected_answer_keywords": ["Guido van Rossum"]
+    }
+  ]
+}

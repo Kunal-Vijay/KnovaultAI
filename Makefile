@@ -22,3 +22,9 @@ migrate-db:
 
 create-migration:
 	docker compose exec fastapi_app alembic revision --autogenerate -m "$(MESSAGE)"
+
+run-evals:
+	docker compose exec fastapi_app python scripts/run_evals.py run
+
+save-baseline:
+	docker compose exec fastapi_app python scripts/run_evals.py save_baseline

@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://otel-collector:4317"
     OTEL_SERVICE_NAME: str = "fastapi-app"
 
+    # Evaluation settings
+    EVALUATION_DATASET_PATH: str = "../evals/dataset/dataset.json"
+    EVALUATION_BASELINE_PATH: str = "../evals/baseline/results.json"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

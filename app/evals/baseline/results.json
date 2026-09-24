@@ -1,0 +1,17 @@
+{
+  "metrics": [
+    {
+      "name": "avg_latency_ms",
+      "value": 57.143330574035645
+    },
+    {
+      "name": "avg_token_usage",
+      "value": 27.0
+    },
+    {
+      "name": "avg_answer_relevance_score",
+      "value": 0.7575413910091874
+    }
+  ],
+  "timestamp": "2026-09-24 15:02:07.488326"
+}

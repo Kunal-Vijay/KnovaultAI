@@ -3,31 +3,43 @@ from logging.config import fileConfig
 
 from alembic import context
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, create_engine
 
 from app import models  # noqa: F401
 from app.db.session import Base
 
-
-def render_item(type_, obj, autogen_context):
-    if type_ == "type" and isinstance(obj, Vector):
-        autogen_context.imports.add("import pgvector.sqlalchemy")
-        return f"pgvector.sqlalchemy.Vector(dim={obj.dim})"
-    return False
-
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
 config = context.config
 
+# Interpret the config file for Python logging.
+# This line sets up loggers basically. # NOQA
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# add your model's MetaData object here
+# for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
+# other values from the config, defined by the needs of env.py,
+# can be acquired a non-local instance of Config.
+# for example, config.get_main_option("myvariable")
 
 def get_database_url() -> str:
+    # Use DATABASE_URL from environment variable first, then alembic.ini
     return os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
 
 
 def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an actual DBAPI connection.  Connections for acquire metadata
+    and perform migrations are provided by the operator.
+
+    """
     url = get_database_url()
     context.configure(
         url=url,
@@ -42,13 +54,19 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = get_database_url()
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+    # Get database URL from environment or alembic.ini
+    db_url = get_database_url()
+    if not db_url:
+        raise ValueError("DATABASE_URL environment variable or sqlalchemy.url in alembic.ini is not set.")
+    
+    # Use create_engine for synchronous connection
+    connectable = create_engine(db_url, poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(
@@ -60,6 +78,20 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
+def render_item(type_, obj, autogen_context):
+    """
+    Provide custom rendering for SQLAlchemy objects.
+
+    This function is a callback for Alembic's autogenerate process.
+    It allows us to customize how certain SQLAlchemy types or objects
+    are rendered in the migration script. For example, to ensure that
+    pgvector's Vector type is correctly imported and defined.
+    """
+    if type_ == "type" and isinstance(obj, Vector):
+        autogen_context.imports.add("from pgvector.sqlalchemy import Vector")
+        return f"Vector(dim={obj.dim})"
+    # Default rendering for other types
+    return False
 
 if context.is_offline_mode():
     run_migrations_offline()

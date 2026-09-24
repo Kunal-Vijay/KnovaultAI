@@ -30,11 +30,11 @@ class HybridSearchService:
             with tracer.start_as_current_span("semantic_search"):
                 query_embedding = self.embedding_service.embed_text(request.query)
                 semantic_sql_query = text(
-                    """SELECT dc.id, dc.document_id, dc.content, dc.source, dc.page_number, dc.section, dc.created_at, dc.embedding, "
-                    "(dc.embedding <-> :query_embedding) AS distance "
-                    "FROM document_chunks AS dc JOIN documents AS d ON dc.document_id = d.id "
-                    "WHERE d.knowledge_base_id = :kb_id "
-                    "ORDER BY distance LIMIT :top_k"""
+                    """SELECT dc.id, dc.document_id, dc.content, dc.source, dc.page_number, dc.section, dc.created_at, dc.embedding,
+                    (dc.embedding <-> :query_embedding) AS distance
+                    FROM document_chunks AS dc JOIN documents AS d ON dc.document_id = d.id
+                    WHERE d.knowledge_base_id = :kb_id
+                    ORDER BY distance LIMIT :top_k"""
                 )
                 semantic_results = db.execute(semantic_sql_query, {
                     "query_embedding": str(query_embedding),
