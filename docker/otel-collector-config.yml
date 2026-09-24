@@ -1,0 +1,15 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  logging:
+    loglevel: debug # Export traces to console for debugging
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [logging]

@@ -9,16 +9,17 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/app/app
-      - ./alembic.ini:/app/alembic.ini
-      - ./migrations:/app/migrations
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/ai_knowledge_base
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317 # OTLP gRPC endpoint
+      - OTEL_SERVICE_NAME=fastapi-app
     depends_on:
       - db
+      - otel-collector # Depend on OTel collector for traces
     # command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload # This is now handled by entrypoint.sh
 
   db:
-    image: pgvector/pgvector:pg16
+    image: postgres:16-alpine
     environment:
       - POSTGRES_DB=ai_knowledge_base
       - POSTGRES_USER=user
@@ -26,8 +27,44 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
-      - "5433:5432" # host 5432 is often taken by a local Postgres install
-    command: postgres -c 'shared_preload_libraries=vector'
+      - "5433:5432" # host 5432 often taken by a local PostgreSQL install
+    command: postgres -c 'shared_preload_libraries=vector' # Enable pgvector extension
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.90.1 # Use contrib for console exporter
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./docker/otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+      - "13133:13133" # Health Check Extension
+      - "8888:8888" # Prometheus metrics exposed by the collector itself
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+    command: --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - fastapi_app # Scrapes metrics from fastapi_app
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
 
 volumes:
   postgres_data:
+  grafana_data:

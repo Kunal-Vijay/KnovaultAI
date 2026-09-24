@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     # LLM Gateway settings
     DEFAULT_LLM_PROVIDER: str = "openai_dummy" # e.g., "openai_dummy", "gemini_dummy", "anthropic_dummy"
 
+    # Observability settings
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://otel-collector:4317"
+    OTEL_SERVICE_NAME: str = "fastapi-app"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
