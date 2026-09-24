@@ -1,14 +1,16 @@
-setuptools>=69.0.0,<81
+setuptools>=69.0.0,<82
 fastapi==0.104.1
+python-multipart==0.0.6
 uvicorn[standard]==0.23.2
 sqlalchemy==2.0.23
 alembic==1.12.1
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
+pydantic>=2.4,<2.12
 pydantic-settings==2.1.0
 asyncio==3.4.3
 pgvector==0.1.1
-sentence-transformers==2.7.0 # Updated to a newer version for compatibility
+sentence-transformers==2.7.0
 torch==2.3.1+cpu
 pytest==7.4.3
 httpx==0.25.1
@@ -19,7 +21,8 @@ opentelemetry-sdk==1.22.0
 opentelemetry-instrumentation-fastapi==0.43b0
 opentelemetry-instrumentation-logging==0.43b0
 opentelemetry-exporter-otlp==1.22.0
-opentelemetry-sdk-extension-aws==2.0.0 # for AWS EKS or ECS deployments
+opentelemetry-sdk-extension-aws==2.0.0
 prometheus_client==0.19.0
 email-validator==2.1.0
-python-multipart==0.0.6
+bcrypt>=4.1,<5 # For password hashing
+python-jose[cryptography]==3.3.0 # For JWT token handling

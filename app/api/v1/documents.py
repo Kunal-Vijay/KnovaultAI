@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.document import Document, DocumentCreate, DocumentUploadRequest
 from app.services import document as doc_service
 from app.services import knowledge_base as kb_service
 from app.services.ingestion import IngestionService
+from app.core.security import get_current_active_user # Import for authorization
 
 router = APIRouter()
 
@@ -15,8 +17,11 @@ def create_doc_for_kb(
     user_id: int,
     kb_id: int,
     doc_create: DocumentCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create document for this user")
     db_kb = kb_service.get_knowledge_base(db, kb_id=kb_id)
     if db_kb is None or db_kb.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge Base not found for this user")
@@ -28,8 +33,11 @@ def read_docs_for_kb(
     kb_id: int,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view documents for this user")
     db_kb = kb_service.get_knowledge_base(db, kb_id=kb_id)
     if db_kb is None or db_kb.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge Base not found for this user")
@@ -41,8 +49,11 @@ def read_doc_for_kb(
     user_id: int,
     kb_id: int,
     doc_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view document for this user")
     db_kb = kb_service.get_knowledge_base(db, kb_id=kb_id)
     if db_kb is None or db_kb.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge Base not found for this user")
@@ -57,7 +68,10 @@ async def upload_document_for_kb(
     kb_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to upload document for this user")
     db_kb = kb_service.get_knowledge_base(db, kb_id=kb_id)
     if db_kb is None or db_kb.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge Base not found for this user")

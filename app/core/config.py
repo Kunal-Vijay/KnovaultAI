@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     EVALUATION_DATASET_PATH: str = "../evals/dataset/dataset.json"
     EVALUATION_BASELINE_PATH: str = "../evals/baseline/results.json"
 
+    # Security settings
+    SECRET_KEY: str = "YOUR_SUPER_SECRET_KEY" # IMPORTANT: Change this in production!
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 # For JWT token expiration
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.knowledge_base import KnowledgeBase, KnowledgeBaseCreate
 from app.services import knowledge_base as kb_service
 from app.services import user as user_service
+from app.core.security import get_current_active_user
 
 router = APIRouter()
 
@@ -13,8 +15,11 @@ router = APIRouter()
 def create_kb_for_user(
     user_id: int,
     kb: KnowledgeBaseCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create knowledge base for this user")
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -25,8 +30,11 @@ def read_kbs_for_user(
     user_id: int,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view knowledge bases for this user")
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -37,8 +45,11 @@ def read_kbs_for_user(
 def read_kb_for_user(
     user_id: int,
     kb_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view knowledge base for this user")
     db_kb = kb_service.get_knowledge_base(db, kb_id=kb_id)
     if db_kb is None or db_kb.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge Base not found for this user")
