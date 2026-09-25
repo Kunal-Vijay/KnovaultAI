@@ -1,4 +1,7 @@
+import uuid
+
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware # New: Import CORSMiddleware
 from app.api.v1.health import router as health_router
 from app.api.v1.users import router as users_router
 from app.api.v1.knowledge_bases import router as kbs_router
@@ -16,6 +19,23 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
     description=settings.PROJECT_DESCRIPTION,
+)
+
+@app.middleware("http")
+async def add_request_id_header(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+# Configure CORS for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Request-ID", "traceparent"],
 )
 
 # Configure OpenTelemetry tracing
