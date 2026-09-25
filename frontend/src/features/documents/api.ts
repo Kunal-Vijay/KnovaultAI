@@ -29,3 +29,10 @@ export async function uploadDocument(userId: number, kbId: number, file: File) {
 }
 
 export const TERMINAL_DOCUMENT_STATUSES = new Set(['completed', 'failed'])
+
+/** Statuses that indicate ingestion is still running (poll every 3s). */
+export const INGESTION_PENDING_STATUSES = new Set([
+  'uploaded',
+  'parsing',
+  'indexing',
+])

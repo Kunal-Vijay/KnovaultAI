@@ -6,8 +6,23 @@ class Settings(BaseSettings):
     PROJECT_DESCRIPTION: str = "A production-style AI Engineering Knowledge Assistant"
     DATABASE_URL: str
 
+    # Embeddings
+    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    EMBEDDING_DIM: int = 384
+
+    # Ingestion / storage
+    LOCAL_STORAGE_DIR: str = "./data/documents"
+    CHUNK_SIZE: int = 500
+    CHUNK_OVERLAP: int = 50
+
     # LLM Gateway settings
-    DEFAULT_LLM_PROVIDER: str = "openai_dummy" # e.g., "openai_dummy", "gemini_dummy", "anthropic_dummy"
+    DEFAULT_LLM_PROVIDER: str = "openrouter"
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "google/gemma-4-26b-a4b-it:free"
+    OPENROUTER_FALLBACK_MODELS: str = ""
+    OPENROUTER_BYOK_PROVIDERS: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_TIMEOUT_SECONDS: float = 120.0
 
     # Observability settings
     OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://otel-collector:4317"

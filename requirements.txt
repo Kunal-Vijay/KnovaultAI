@@ -23,6 +23,9 @@ opentelemetry-instrumentation-logging==0.43b0
 opentelemetry-exporter-otlp==1.22.0
 opentelemetry-sdk-extension-aws==2.0.0
 prometheus_client==0.19.0
+pypdf==4.3.1
+python-docx==1.1.2
 email-validator==2.1.0
+pytest-asyncio==0.23.8
 bcrypt>=4.1,<5 # For password hashing
 python-jose[cryptography]==3.3.0 # For JWT token handling

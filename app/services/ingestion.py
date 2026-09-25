@@ -1,137 +1,203 @@
 import asyncio
-import mimetypes
+import hashlib
 import logging
-from typing import Dict, Any
-from sqlalchemy.orm import Session
-from sqlalchemy import text
+import mimetypes
+from concurrent.futures import ThreadPoolExecutor
 
-from app.core.storage import get_storage_client
+from sqlalchemy.orm import Session
+
 from app.core.embedding import embedding_service
-from app.db.session import get_db
-from app.models.document import Document
-from app.models.document_chunk import DocumentChunk
-from app.ingestion.parsers import get_parser
+from app.core.observability import tracer
+from app.core.storage import get_storage_client
+from app.db.session import SessionLocal
 from app.ingestion.chunkers import get_chunker
 from app.ingestion.metadata_extractors import get_metadata_extractor
-from app.core.observability import tracer # Import tracer
+from app.ingestion.parsers import get_parser
+from app.models.document import Document
+from app.models.document_chunk import DocumentChunk
 
 logger = logging.getLogger(__name__)
 
-async def ingest_document_background_task(doc_id: int, file_content: bytes):
+_executor = ThreadPoolExecutor(max_workers=2)
+
+
+def _content_sha256(file_content: bytes) -> str:
+    return hashlib.sha256(file_content).hexdigest()
+
+
+def _find_duplicate_in_kb(db: Session, kb_id: int, content_hash: str) -> Document | None:
+    return (
+        db.query(Document)
+        .filter(
+            Document.knowledge_base_id == kb_id,
+            Document.content_sha256 == content_hash,
+            Document.status == "completed",
+        )
+        .first()
+    )
+
+
+def ingest_document_sync(doc_id: int, file_content: bytes) -> None:
     with tracer.start_as_current_span("ingest_document_background_task") as span:
         span.set_attribute("document_id", doc_id)
-        db = next(get_db()) # Get a new DB session for the background task
-        document = None # Initialize document to None
+        db = SessionLocal()
+        document: Document | None = None
         try:
             document = db.query(Document).filter(Document.id == doc_id).first()
             if not document:
-                logger.error(f"Document not found for ingestion: {doc_id}")
+                logger.error("Document not found for ingestion: %s", doc_id)
                 span.set_attribute("error", True)
-                span.record_exception(ValueError(f"Document not found: {doc_id}"))
                 return
 
-            logger.info(f"Starting ingestion for document: {document.filename} (ID: {doc_id})")
+            logger.info(
+                "Starting ingestion for document: %s (ID: %s)",
+                document.filename,
+                doc_id,
+            )
             span.set_attribute("document.filename", document.filename)
 
-            # 1. Determine MIME type and get parser
+            document.status = "parsing"
+            document.error_message = None
+            db.add(document)
+            db.commit()
+
             with tracer.start_as_current_span("parse_document"):
                 mime_type = mimetypes.guess_type(document.filename)[0]
                 if not mime_type:
-                    mime_type = "application/octet-stream" # Default if unable to guess
+                    mime_type = "application/octet-stream"
                 span.set_attribute("document.mime_type", mime_type)
 
                 parser = get_parser(mime_type)
                 text_content = parser.parse(file_content)
 
-            # 2. Extract metadata
             with tracer.start_as_current_span("extract_metadata"):
                 metadata_extractor = get_metadata_extractor()
-                extracted_metadata = metadata_extractor.extract(file_content, document.filename, mime_type)
+                extracted_metadata = metadata_extractor.extract(
+                    file_content, document.filename, mime_type
+                )
 
-            # Update document with extracted metadata
             document.mime_type = mime_type
             document.num_pages = extracted_metadata.get("num_pages")
             document.raw_content_size = len(file_content)
-            document.status = "parsing"
+            document.content_sha256 = _content_sha256(file_content)
+            document.embedding_model = embedding_service.model_name
             db.add(document)
             db.commit()
-            db.refresh(document)
-            logger.info(f"Document {doc_id} parsed and metadata extracted.")
 
-            # 3. Chunk the document
+            duplicate = _find_duplicate_in_kb(
+                db, document.knowledge_base_id, document.content_sha256
+            )
+            if duplicate and duplicate.id != document.id:
+                document.status = "completed"
+                document.chunk_count = duplicate.chunk_count
+                document.embedding_model = duplicate.embedding_model
+                document.error_message = None
+                db.add(document)
+                db.commit()
+                logger.info(
+                    "Document %s marked completed (duplicate of doc %s)",
+                    doc_id,
+                    duplicate.id,
+                )
+                return
+
             with tracer.start_as_current_span("chunk_document"):
                 chunker = get_chunker()
                 chunks_content = chunker.chunk(text_content)
                 span.set_attribute("document.chunks_count", len(chunks_content))
-                logger.info(f"Document {doc_id} chunked into {len(chunks_content)} chunks.")
+                if not chunks_content:
+                    raise ValueError("No text content extracted from document")
 
-            # 4. Create DocumentChunks and generate embeddings
-            with tracer.start_as_current_span("create_chunks_and_embed"):
-                for i, chunk_content in enumerate(chunks_content):
-                    embedding = embedding_service.embed_text(chunk_content)
-                    db_chunk = DocumentChunk(
-                        document_id=document.id,
-                        content=chunk_content,
-                        source=document.filename, # Or a more specific source if available
-                        page_number=extracted_metadata.get("page_number"),
-                        section=extracted_metadata.get("section"),
-                        embedding=embedding
-                    )
-                    db.add(db_chunk)
-                    db.flush() # Flush to get chunk.id for tsvector update
-
-                    # Update content_tsvector using raw SQL for PostgreSQL FTS
-                    db.execute(text("UPDATE document_chunks SET content_tsvector = to_tsvector('english', :content) WHERE id = :chunk_id"),
-                               {"content": chunk_content, "chunk_id": db_chunk.id})
-                db.commit()
-                logger.info(f"Document {doc_id} chunks created and embeddings generated.")
-            
-            document.status = "completed"
+            document.status = "indexing"
             db.add(document)
             db.commit()
-            logger.info(f"Document {doc_id} ingestion completed successfully.")
 
-        except Exception as e:
-            logger.exception(f"Document ingestion failed for doc_id {doc_id}")
+            db.query(DocumentChunk).filter(DocumentChunk.document_id == document.id).delete()
+            db.commit()
+
+            with tracer.start_as_current_span("create_chunks_and_embed"):
+                embeddings = embedding_service.embed_batch(chunks_content)
+                for index, (chunk_content, embedding) in enumerate(
+                    zip(chunks_content, embeddings, strict=True)
+                ):
+                    db_chunk = DocumentChunk(
+                        document_id=document.id,
+                        chunk_index=index,
+                        content=chunk_content,
+                        source=document.filename,
+                        page_number=extracted_metadata.get("page_number"),
+                        section=extracted_metadata.get("section"),
+                        embedding=embedding,
+                    )
+                    db.add(db_chunk)
+
+                document.status = "completed"
+                document.chunk_count = len(chunks_content)
+                document.error_message = None
+                db.add(document)
+                db.commit()
+                logger.info("Document %s ingestion completed successfully.", doc_id)
+
+        except Exception as exc:
+            logger.exception("Document ingestion failed for doc_id %s", doc_id)
             if document:
                 document.status = "failed"
+                document.error_message = str(exc)[:2000]
                 db.add(document)
                 db.commit()
             span.set_attribute("error", True)
-            span.record_exception(e)
+            span.record_exception(exc)
         finally:
             db.close()
+
+
+async def ingest_document_background_task(doc_id: int, file_content: bytes) -> None:
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(_executor, ingest_document_sync, doc_id, file_content)
+
 
 class IngestionService:
     def __init__(self):
         self.storage_client = get_storage_client()
 
-    async def upload_and_ingest_document(self, db: Session, user_id: int, kb_id: int, filename: str, file_content: bytes) -> Document:
+    async def upload_and_ingest_document(
+        self,
+        db: Session,
+        user_id: int,
+        kb_id: int,
+        filename: str,
+        file_content: bytes,
+        *,
+        schedule_ingestion: bool = True,
+    ) -> Document:
         with tracer.start_as_current_span("upload_and_ingest_document") as span:
             span.set_attribute("user_id", user_id)
             span.set_attribute("kb_id", kb_id)
             span.set_attribute("filename", filename)
 
-            # Save file to external storage (mocked local storage for now)
+            duplicate = _find_duplicate_in_kb(db, kb_id, _content_sha256(file_content))
+            if duplicate is not None:
+                span.set_attribute("deduplicated", True)
+                span.set_attribute("existing_document_id", duplicate.id)
+                return duplicate
+
             storage_ref = self.storage_client.save_file(file_content, filename)
 
-            # Create document entry in DB with 'uploaded' status
             new_document = Document(
                 knowledge_base_id=kb_id,
                 filename=filename,
                 external_storage_ref=storage_ref,
                 status="uploaded",
-                raw_content_size=len(file_content) # Initial size, might change after parsing
+                raw_content_size=len(file_content),
+                content_sha256=_content_sha256(file_content),
             )
             db.add(new_document)
             db.commit()
             db.refresh(new_document)
             span.set_attribute("document_id", new_document.id)
-            logger.info(f"Document {new_document.id} uploaded and awaiting ingestion.")
+            logger.info("Document %s uploaded and awaiting ingestion.", new_document.id)
 
-            # Trigger background ingestion task (placeholder for now)
-            # In a real-world scenario, this would involve a message queue or a proper background task library
-            asyncio.create_task(ingest_document_background_task(new_document.id, file_content))
+            if schedule_ingestion:
+                await ingest_document_background_task(new_document.id, file_content)
 
             return new_document
-

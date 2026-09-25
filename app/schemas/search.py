@@ -9,6 +9,7 @@ class SearchRequest(BaseModel):
     keyword_query: Optional[str] = None # New: for keyword search
     top_k: int = 5
     rrf_k: int = 60 # New: K parameter for Reciprocal Rank Fusion
+    similarity_threshold: Optional[float] = None
 
 class SearchResultItem(BaseModel):
     chunk: DocumentChunk

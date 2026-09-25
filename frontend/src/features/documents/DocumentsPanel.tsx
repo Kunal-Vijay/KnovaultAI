@@ -86,6 +86,7 @@ export function DocumentsPanel({ kbId }: { kbId: number }) {
                 <th className="p-3 font-medium">Filename</th>
                 <th className="p-3 font-medium">Status</th>
                 <th className="p-3 font-medium">Type</th>
+                <th className="p-3 font-medium">Chunks</th>
                 <th className="p-3 font-medium">Uploaded</th>
               </tr>
             </thead>
@@ -94,9 +95,20 @@ export function DocumentsPanel({ kbId }: { kbId: number }) {
                 <tr key={doc.id} className="border-t">
                   <td className="p-3">{doc.filename}</td>
                   <td className="p-3">
-                    <Badge variant={doc.status === 'failed' ? 'outline' : 'secondary'} className={doc.status === 'failed' ? 'border-destructive text-destructive' : ''}>{doc.status}</Badge>
+                    <div className="space-y-1">
+                      <Badge
+                        variant={doc.status === 'failed' ? 'outline' : 'secondary'}
+                        className={doc.status === 'failed' ? 'border-destructive text-destructive' : ''}
+                      >
+                        {doc.status}
+                      </Badge>
+                      {doc.error_message && (
+                        <p className="text-xs text-destructive max-w-md">{doc.error_message}</p>
+                      )}
+                    </div>
                   </td>
                   <td className="p-3 text-muted-foreground">{doc.mime_type ?? '—'}</td>
+                  <td className="p-3 text-muted-foreground">{doc.chunk_count ?? 0}</td>
                   <td className="p-3 text-muted-foreground">{new Date(doc.created_at).toLocaleString()}</td>
                 </tr>
               ))}

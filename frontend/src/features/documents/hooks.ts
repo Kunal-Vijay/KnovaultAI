@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { listDocuments, TERMINAL_DOCUMENT_STATUSES, uploadDocument } from './api'
+import { listDocuments, TERMINAL_DOCUMENT_STATUSES, INGESTION_PENDING_STATUSES, uploadDocument } from './api'
 import { useAuth } from '@/hooks/useAuth'
 
 export function useDocuments(kbId: number) {
@@ -15,7 +15,11 @@ export function useDocuments(kbId: number) {
     refetchInterval: (query) => {
       const docs = query.state.data
       if (!docs?.length) return false
-      const hasPending = docs.some((d) => !TERMINAL_DOCUMENT_STATUSES.has(d.status))
+      const hasPending = docs.some(
+        (d) =>
+          INGESTION_PENDING_STATUSES.has(d.status) ||
+          !TERMINAL_DOCUMENT_STATUSES.has(d.status),
+      )
       return hasPending ? 3000 : false
     },
   })

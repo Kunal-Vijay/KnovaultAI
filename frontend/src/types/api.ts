@@ -39,6 +39,10 @@ export interface Document {
   mime_type?: string | null
   num_pages?: number | null
   raw_content_size?: number | null
+  content_sha256?: string | null
+  embedding_model?: string | null
+  chunk_count?: number
+  error_message?: string | null
   created_at: string
 }
 

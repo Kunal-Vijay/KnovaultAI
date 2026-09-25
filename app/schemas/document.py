@@ -16,6 +16,10 @@ class Document(DocumentBase):
     mime_type: Optional[str] = None
     num_pages: Optional[int] = None
     raw_content_size: Optional[int] = None
+    content_sha256: Optional[str] = None
+    embedding_model: Optional[str] = None
+    chunk_count: int = 0
+    error_message: Optional[str] = None
     created_at: datetime
 
     class Config:

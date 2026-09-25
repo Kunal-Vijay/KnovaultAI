@@ -1,9 +1,12 @@
 import os
 from typing import Optional
 
+from app.core.config import settings
+
+
 class LocalFileStorage:
-    def __init__(self, base_dir: str = "./data/documents"):
-        self.base_dir = base_dir
+    def __init__(self, base_dir: str | None = None):
+        self.base_dir = base_dir or settings.LOCAL_STORAGE_DIR
         os.makedirs(self.base_dir, exist_ok=True)
 
     def save_file(self, file_content: bytes, filename: str) -> str:

@@ -4,6 +4,8 @@ import sys
 import json
 from datetime import datetime
 
+# Requires OPENROUTER_API_KEY when DEFAULT_LLM_PROVIDER=openrouter (see .env.example).
+
 # Add the app directory to the path so imports work
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 

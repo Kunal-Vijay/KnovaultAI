@@ -1,14 +1,33 @@
 from sentence_transformers import SentenceTransformer
 
+from app.core.config import settings
+
+
 class EmbeddingService:
     def __init__(self):
-        # Load a pre-trained sentence-transformer model
-        # all-MiniLM-L6-v2 provides a good balance of performance and size
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self._model: SentenceTransformer | None = None
+
+    @property
+    def model_name(self) -> str:
+        return settings.EMBEDDING_MODEL
+
+    def _get_model(self) -> SentenceTransformer:
+        if self._model is None:
+            self._model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        return self._model
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        vectors = self._get_model().encode(
+            texts,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+        )
+        return [vector.tolist() for vector in vectors]
 
     def embed_text(self, text: str) -> list[float]:
-        # Generate embedding for a given text
-        embedding = self.model.encode(text, convert_to_numpy=False, convert_to_tensor=False) # Return as list of floats
-        return embedding.tolist()
+        return self.embed_batch([text])[0]
+
 
 embedding_service = EmbeddingService()

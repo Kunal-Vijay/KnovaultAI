@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -7,7 +7,7 @@ from app.models.user import User
 from app.schemas.document import Document, DocumentCreate, DocumentUploadRequest
 from app.services import document as doc_service
 from app.services import knowledge_base as kb_service
-from app.services.ingestion import IngestionService
+from app.services.ingestion import IngestionService, ingest_document_sync
 from app.core.security import get_current_active_user # Import for authorization
 
 router = APIRouter()
@@ -66,6 +66,7 @@ def read_doc_for_kb(
 async def upload_document_for_kb(
     user_id: int,
     kb_id: int,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
@@ -81,6 +82,13 @@ async def upload_document_for_kb(
 
     ingestion_service = IngestionService()
     new_document = await ingestion_service.upload_and_ingest_document(
-        db=db, user_id=user_id, kb_id=kb_id, filename=file.filename, file_content=file_content
+        db=db,
+        user_id=user_id,
+        kb_id=kb_id,
+        filename=file.filename,
+        file_content=file_content,
+        schedule_ingestion=False,
     )
+    if new_document.status == "uploaded":
+        background_tasks.add_task(ingest_document_sync, new_document.id, file_content)
     return new_document

@@ -11,10 +11,19 @@ services:
       - ./app:/app/app
       - ./migrations:/app/migrations
       - ./scripts:/app/scripts
+      - document_storage:/app/data/documents
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/ai_knowledge_base
+      - LOCAL_STORAGE_DIR=/app/data/documents
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317 # OTLP gRPC endpoint
       - OTEL_SERVICE_NAME=fastapi-app
+      - DEFAULT_LLM_PROVIDER=openrouter
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemma-4-26b-a4b-it:free}
+      - OPENROUTER_FALLBACK_MODELS=${OPENROUTER_FALLBACK_MODELS:-}
+      - OPENROUTER_BYOK_PROVIDERS=${OPENROUTER_BYOK_PROVIDERS:-google-ai-studio}
     depends_on:
       - db
       - otel-collector # Depend on OTel collector for traces
@@ -99,3 +108,4 @@ volumes:
   postgres_data:
   grafana_data:
   frontend_node_modules:
+  document_storage:

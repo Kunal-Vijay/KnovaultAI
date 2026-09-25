@@ -14,6 +14,7 @@ class DocumentChunkCreate(DocumentChunkBase):
 class DocumentChunk(DocumentChunkBase):
     id: int
     document_id: int
+    chunk_index: Optional[int] = None
     created_at: datetime
 
     class Config:

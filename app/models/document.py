@@ -14,6 +14,10 @@ class Document(Base):
     mime_type = Column(String, nullable=True)
     num_pages = Column(Integer, nullable=True) # For document types that have pages
     raw_content_size = Column(Integer, nullable=True) # Size in bytes of the raw content
+    content_sha256 = Column(String(64), nullable=True, index=True)
+    embedding_model = Column(String(256), nullable=True)
+    chunk_count = Column(Integer, default=0, nullable=False)
+    error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     knowledge_base = relationship("KnowledgeBase", back_populates="documents")

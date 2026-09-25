@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth'
 import type { ApiMeta, RAGResponse, SearchResultItem } from '@/types/api'
 import { askRag } from './api'
 import { searchKnowledge } from '@/features/search/api'
+import { useDocuments } from '@/features/documents/hooks'
 
 const EXAMPLE_PROMPTS = [
   'Why does evaluation retry fail?',
@@ -28,6 +29,8 @@ interface ChatMessage {
 
 export function AskPanel({ kbId }: { kbId: number }) {
   const { user } = useAuth()
+  const { data: docs } = useDocuments(kbId)
+  const hasIndexedDocs = (docs ?? []).some((d) => d.status === 'completed' && (d.chunk_count ?? 0) > 0)
   const [question, setQuestion] = useState('')
   const [loading, setLoading] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -86,7 +89,10 @@ export function AskPanel({ kbId }: { kbId: number }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Ask a question</CardTitle>
-          <CardDescription>Answers are grounded in documents in this knowledge base.</CardDescription>
+          <CardDescription>
+            Answers are grounded in documents in this knowledge base.
+            {!hasIndexedDocs && ' Upload and wait for indexing to finish before asking.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
@@ -110,7 +116,11 @@ export function AskPanel({ kbId }: { kbId: number }) {
               disabled={loading}
               aria-label="Question"
             />
-            <Button type="submit" disabled={loading || !question.trim()} aria-label="Send question">
+            <Button
+              type="submit"
+              disabled={loading || !question.trim() || !hasIndexedDocs}
+              aria-label="Send question"
+            >
               <Send className="h-4 w-4" />
             </Button>
           </form>

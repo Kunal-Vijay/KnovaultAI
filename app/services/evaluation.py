@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import random
@@ -67,7 +68,7 @@ class EvaluationService:
                 knowledge_base_id=test_case.knowledge_base_id,
                 question=test_case.question
             )
-            rag_response = rag_service.get_answer(db, rag_request)
+            rag_response = asyncio.run(rag_service.get_answer(db, rag_request))
             end_time = time.time()
             latency = end_time - start_time
 
