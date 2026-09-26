@@ -35,9 +35,12 @@ class Settings(BaseSettings):
 
     QUERY_HISTORY_RETENTION_DAYS: int = 0
 
-    # Observability settings
-    OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://otel-collector:4317"
+    # Observability settings (empty = no OTLP export; set in Docker Compose for local otel-collector)
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
     OTEL_SERVICE_NAME: str = "fastapi-app"
+
+    # Comma-separated browser origins for CORS (include your deployed frontend URL)
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:8080"
 
     # Evaluation settings
     EVALUATION_DATASET_PATH: str = "../evals/dataset/dataset.json"

@@ -1,6 +1,9 @@
-from sentence_transformers import SentenceTransformer
+from typing import TYPE_CHECKING
 
 from app.core.config import settings
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 
 class EmbeddingService:
@@ -13,6 +16,8 @@ class EmbeddingService:
 
     def _get_model(self) -> SentenceTransformer:
         if self._model is None:
+            from sentence_transformers import SentenceTransformer
+
             self._model = SentenceTransformer(settings.EMBEDDING_MODEL)
         return self._model
 

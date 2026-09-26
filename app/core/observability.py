@@ -46,17 +46,20 @@ OTEL_RESOURCE_ATTRIBUTES = {
 }
 
 def configure_opentelemetry_tracing(app):
+    endpoint = (settings.OTEL_EXPORTER_OTLP_ENDPOINT or "").strip()
+    if not endpoint or endpoint.lower() in {"none", "false", "disabled", "off"}:
+        logging.getLogger(__name__).info("OpenTelemetry OTLP export disabled (no collector endpoint).")
+        return
+
     resource = Resource.create(OTEL_RESOURCE_ATTRIBUTES)
 
-    # Configure OTLP gRPC exporter for traces
-    otlp_exporter = OTLPSpanExporter(endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT)
+    otlp_exporter = OTLPSpanExporter(endpoint=endpoint)
     span_processor = SimpleSpanProcessor(otlp_exporter)
 
     provider = TracerProvider(resource=resource)
     provider.add_span_processor(span_processor)
     trace.set_tracer_provider(provider)
 
-    # Instrument FastAPI application
     FastAPIInstrumentor.instrument_app(app, tracer_provider=provider, excluded_urls="/metrics,/health,/ready")
 
 

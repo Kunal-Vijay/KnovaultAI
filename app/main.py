@@ -29,10 +29,10 @@ async def add_request_id_header(request: Request, call_next):
     response.headers["X-Request-ID"] = request_id
     return response
 
-# Configure CORS for frontend
+_cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:8080"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
