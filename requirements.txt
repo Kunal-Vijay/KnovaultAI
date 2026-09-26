@@ -13,7 +13,7 @@ pgvector==0.1.1
 sentence-transformers==2.7.0
 torch==2.3.1+cpu
 pytest==7.4.3
-httpx==0.25.1
+httpx>=0.26,<0.29
 ruff==0.1.6
 python-json-logger==2.0.7
 opentelemetry-api==1.22.0
