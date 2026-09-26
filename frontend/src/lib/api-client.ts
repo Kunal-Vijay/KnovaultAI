@@ -1,7 +1,10 @@
 import { clearToken, getToken } from '@/lib/auth'
 import type { ApiMeta, ApiResult } from '@/types/api'
 
-const API_BASE = '/api/v1'
+/** Dev: Vite proxies `/api` → backend. Prod: set `VITE_API_BASE_URL` (e.g. https://api.example.com/v1). */
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '/api/v1'
+).replace(/\/$/, '')
 
 export class ApiError extends Error {
   status: number

@@ -84,12 +84,41 @@ Then locally: log in as `demo` with that password, create knowledge bases, and u
 1. **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (not `127.0.0.1`, not a fixed port).
 2. **Health check path:** `/v1/health` (liveness only; DB is `/v1/ready`).
 3. **Env values:** no surrounding `"` quotes in the Render dashboard (especially `DATABASE_URL`).
-4. **`OTEL_EXPORTER_OTLP_ENDPOINT`:** leave unset or empty on Render.
-5. **`SECRET_KEY`:** random string (e.g. `openssl rand -hex 32`); do not reuse the Supabase service role key.
-6. **RAM:** PyTorch + embeddings often need **Starter** (512MB free tier may OOM or never become ready). See [render.yaml](render.yaml).
-7. **Logs:** Render → Logs → look for `Out of memory`, `Killed`, or Python tracebacks on boot.
+4. **`DATABASE_URL`:** use Supabase **Session pooler** URI (Dashboard → Connect → Session mode) if `/v1/ready` shows IPv6 / “Network is unreachable” to `db.*.supabase.co`. User must be `postgres.<project-ref>`.
+5. **`OTEL_EXPORTER_OTLP_ENDPOINT`:** leave unset or empty on Render.
+6. **`SECRET_KEY`:** random string (e.g. `openssl rand -hex 32`); do not reuse the Supabase service role key.
+7. **RAM:** PyTorch + embeddings often need **Starter** (512MB free tier may OOM or never become ready). See [render.yaml](render.yaml).
+8. **Logs:** Render → Logs → look for `Out of memory`, `Killed`, or Python tracebacks on boot.
 
 After deploy: `curl -s https://YOUR-SERVICE.onrender.com/v1/health`
+
+## Render (frontend static site)
+
+1. **Backend CORS:** On the API service, set `CORS_ORIGINS` to your frontend URL (comma-separated), e.g.  
+   `https://knovaultai.onrender.com,http://localhost:5173`  
+   Use the **static site** URL once it exists (update and redeploy API if you add the frontend later).
+
+2. **New Static Site** (Render Dashboard → New → Static Site → same Git repo).
+
+   | Setting | Value |
+   |--------|--------|
+   | Root directory | `frontend` |
+   | Build command | `npm install && npm run build` |
+   | Publish directory | `dist` |
+
+3. **Environment variables** (build-time; required for production):
+
+   | Key | Example |
+   |-----|---------|
+   | `VITE_API_BASE_URL` | `https://YOUR-API.onrender.com/v1` |
+   | `VITE_DEMO_LOGIN_ENABLED` | `true` |
+   | `VITE_ALLOW_REGISTRATION` | `false` |
+
+4. **Deploy.** `public/_redirects` sends all routes to `index.html` for React Router.
+
+5. **Verify:** open the static URL → **Try demo** → dashboard loads; browser Network tab shows requests to `YOUR-API.onrender.com/v1/...` (not `/api` on the static host).
+
+**Alternatives:** Vercel/Netlify/Cloudflare Pages — same root `frontend`, same build env vars; add an SPA fallback (`/* → /index.html`) if the host does not read `_redirects`.
 
 ## Migrations
 

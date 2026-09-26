@@ -1,4 +1,16 @@
+import socket
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+
+
+def _ipv4_hostaddr(hostname: str) -> str | None:
+    """Resolve an IPv4 address for hosts where only AAAA is reachable (e.g. Render → Supabase)."""
+    try:
+        infos = socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM)
+    except OSError:
+        return None
+    if not infos:
+        return None
+    return infos[0][4][0]
 
 
 def normalize_database_url(url: str) -> str:
@@ -16,12 +28,19 @@ def sqlalchemy_connect_args(database_url: str) -> dict:
     if "supabase.co" not in host:
         return {}
 
+    args: dict = {"sslmode": "require"}
+
     query = dict(parse_qsl(parsed.query, keep_blank_values=True))
     if query.get("sslmode"):
-        return {}
+        args["sslmode"] = query["sslmode"]
 
-    query["sslmode"] = "require"
-    return {"sslmode": "require"}
+    # Direct db.<ref>.supabase.co often resolves to IPv6; many PaaS networks have no IPv6 egress.
+    if host.startswith("db.") and host.endswith(".supabase.co"):
+        hostaddr = _ipv4_hostaddr(host)
+        if hostaddr:
+            args["hostaddr"] = hostaddr
+
+    return args
 
 
 def database_url_with_ssl_query(database_url: str) -> str:

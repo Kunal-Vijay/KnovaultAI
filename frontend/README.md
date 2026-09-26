@@ -26,7 +26,18 @@ The `frontend` service sets `VITE_API_PROXY_TARGET=http://fastapi_app:8000`. On 
 
 If dependencies still look stale, reset the volume: `docker compose down` then `docker volume rm ai-knowledge-base_frontend_node_modules` (name may vary; check `docker volume ls`).
 
-## Production static build
+## Production static build (Vercel, Render, etc.)
+
+Set **build-time** env vars in the host dashboard (or `frontend/.env.production` locally). Only names prefixed with `VITE_` are exposed to the app.
+
+| Variable | When | Example |
+|----------|------|---------|
+| `VITE_API_BASE_URL` | **Required** on static hosts | `https://knovaultai.onrender.com/v1` |
+| `VITE_DEMO_LOGIN_ENABLED` | Portfolio demo | `true` |
+| `VITE_ALLOW_REGISTRATION` | Hide sign-up | `false` |
+
+- **Do not** set `VITE_API_BASE_URL` for local dev; keep using `VITE_API_PROXY_TARGET` and requests to `/api/v1`.
+- After changing any `VITE_*` on Vercel/Render, trigger a **new deploy** (values are baked into the bundle at `npm run build`).
 
 ```bash
 npm run build

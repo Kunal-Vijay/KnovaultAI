@@ -19,9 +19,16 @@ def test_normalize_database_url_strips_quotes():
     )
 
 
-def test_sqlalchemy_connect_args_supabase_host():
+def test_sqlalchemy_connect_args_supabase_host(monkeypatch):
+    monkeypatch.setattr(
+        "app.db.url._ipv4_hostaddr",
+        lambda host: "198.51.100.10" if host == "db.abc.supabase.co" else None,
+    )
     url = "postgresql://u:p@db.abc.supabase.co:5432/postgres"
-    assert sqlalchemy_connect_args(url) == {"sslmode": "require"}
+    assert sqlalchemy_connect_args(url) == {
+        "sslmode": "require",
+        "hostaddr": "198.51.100.10",
+    }
 
 
 def test_sqlalchemy_connect_args_local_empty():
