@@ -62,3 +62,31 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     if not current_user.is_active:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user
+
+
+def can_upload_from_token_payload(payload: dict) -> bool:
+    """JWT claim can_upload; omitted defaults to True for backward compatibility."""
+    value = payload.get("can_upload", True)
+    if isinstance(value, bool):
+        return value
+    return True
+
+
+def decode_access_token_payload(token: str) -> dict:
+    return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+
+
+async def require_can_upload(token: str = Depends(oauth2_scheme)) -> None:
+    try:
+        payload = decode_access_token_payload(token)
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not can_upload_from_token_payload(payload):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Upload not allowed for demo sessions",
+        )

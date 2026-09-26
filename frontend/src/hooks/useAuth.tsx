@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { apiRequest } from '@/lib/api-client'
 import {
+  canUploadFromToken,
   clearToken,
   decodeJwt,
   getToken,
@@ -21,6 +22,7 @@ interface AuthContextValue {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
+  canUpload: boolean
   loginWithToken: (token: string) => Promise<void>
   logout: () => void
   refreshUser: () => Promise<void>
@@ -77,16 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false))
   }, [refreshUser])
 
+  const canUpload = useMemo(() => canUploadFromToken(getToken()), [user])
+
   const value = useMemo(
     () => ({
       user,
       isLoading,
       isAuthenticated: !!user,
+      canUpload,
       loginWithToken,
       logout,
       refreshUser,
     }),
-    [user, isLoading, loginWithToken, logout, refreshUser],
+    [user, isLoading, canUpload, loginWithToken, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

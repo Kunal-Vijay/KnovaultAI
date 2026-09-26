@@ -2,13 +2,14 @@ import asyncio
 import hashlib
 import logging
 import mimetypes
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy.orm import Session
 
 from app.core.embedding import embedding_service
 from app.core.observability import tracer
-from app.core.storage import get_storage_client
+from app.core.storage import build_document_object_key, get_storage_client
 from app.db.session import SessionLocal
 from app.ingestion.chunkers import get_chunker
 from app.ingestion.metadata_extractors import get_metadata_extractor
@@ -61,6 +62,16 @@ def ingest_document_sync(doc_id: int, file_content: bytes) -> None:
             db.add(document)
             db.commit()
 
+            content = file_content
+            if not content:
+                storage = get_storage_client()
+                loaded = storage.get_file(document.external_storage_ref)
+                if not loaded:
+                    raise ValueError(
+                        "No file content for ingestion and storage read failed"
+                    )
+                content = loaded
+
             with tracer.start_as_current_span("parse_document"):
                 mime_type = mimetypes.guess_type(document.filename)[0]
                 if not mime_type:
@@ -68,18 +79,18 @@ def ingest_document_sync(doc_id: int, file_content: bytes) -> None:
                 span.set_attribute("document.mime_type", mime_type)
 
                 parser = get_parser(mime_type)
-                text_content = parser.parse(file_content)
+                text_content = parser.parse(content)
 
             with tracer.start_as_current_span("extract_metadata"):
                 metadata_extractor = get_metadata_extractor()
                 extracted_metadata = metadata_extractor.extract(
-                    file_content, document.filename, mime_type
+                    content, document.filename, mime_type
                 )
 
             document.mime_type = mime_type
             document.num_pages = extracted_metadata.get("num_pages")
-            document.raw_content_size = len(file_content)
-            document.content_sha256 = _content_sha256(file_content)
+            document.raw_content_size = len(content)
+            document.content_sha256 = _content_sha256(content)
             document.embedding_model = embedding_service.model_name
             db.add(document)
             db.commit()
@@ -181,7 +192,14 @@ class IngestionService:
                 span.set_attribute("existing_document_id", duplicate.id)
                 return duplicate
 
-            storage_ref = self.storage_client.save_file(file_content, filename)
+            object_key = build_document_object_key(kb_id, filename, uuid.uuid4().hex)
+            mime_type = mimetypes.guess_type(filename)[0]
+            storage_ref = self.storage_client.save_file(
+                file_content,
+                filename,
+                object_key=object_key,
+                content_type=mime_type,
+            )
 
             new_document = Document(
                 knowledge_base_id=kb_id,

@@ -8,7 +8,7 @@ from app.schemas.document import Document, DocumentCreate, DocumentUploadRequest
 from app.services import document as doc_service
 from app.services import knowledge_base as kb_service
 from app.services.ingestion import IngestionService, ingest_document_sync
-from app.core.security import get_current_active_user # Import for authorization
+from app.core.security import get_current_active_user, require_can_upload
 
 router = APIRouter()
 
@@ -18,7 +18,8 @@ def create_doc_for_kb(
     kb_id: int,
     doc_create: DocumentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_can_upload),
 ):
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create document for this user")
@@ -69,7 +70,8 @@ async def upload_document_for_kb(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_can_upload),
 ):
     if current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to upload document for this user")

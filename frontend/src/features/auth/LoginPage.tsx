@@ -7,8 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { login } from '@/lib/api-client'
+import { login, loginAsDemo } from '@/lib/api-client'
 import { useAuth } from '@/hooks/useAuth'
+
+const demoLoginEnabled = import.meta.env.VITE_DEMO_LOGIN_ENABLED === 'true'
+const allowRegistration = import.meta.env.VITE_ALLOW_REGISTRATION === 'true'
 
 const schema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -39,6 +42,17 @@ export function LoginPage() {
     }
   })
 
+  const onTryDemo = async () => {
+    try {
+      const { data } = await loginAsDemo()
+      await loginWithToken(data.access_token)
+      toast.success('Welcome to the demo!')
+      navigate(from, { replace: true })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Demo login failed')
+    }
+  }
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -64,13 +78,20 @@ export function LoginPage() {
           <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? 'Signing in…' : 'Sign in'}
           </Button>
+          {demoLoginEnabled && (
+            <Button type="button" variant="secondary" className="w-full" onClick={() => void onTryDemo()}>
+              Try demo
+            </Button>
+          )}
         </form>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          No account?{' '}
-          <Link to="/register" className="text-primary underline-offset-4 hover:underline">
-            Create one
-          </Link>
-        </p>
+        {allowRegistration && (
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            No account?{' '}
+            <Link to="/register" className="text-primary underline-offset-4 hover:underline">
+              Create one
+            </Link>
+          </p>
+        )}
       </CardContent>
     </Card>
   )

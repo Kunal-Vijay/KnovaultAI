@@ -55,7 +55,7 @@ export function HistoryPanel({ kbId }: { kbId: number }) {
                     <td className="p-3 text-muted-foreground">{new Date(row.created_at).toLocaleString()}</td>
                     <td className="p-3">
                       <Button variant="link" size="sm" asChild>
-                        <Link to={`/knowledge-bases/${kbId}/history/${row.execution_id}`}>Pipeline</Link>
+                        <Link to={`/knowledge-bases/${kbId}/history/${row.execution_id}`}>View Details</Link>
                       </Button>
                     </td>
                   </tr>

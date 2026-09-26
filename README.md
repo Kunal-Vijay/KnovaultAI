@@ -1,4 +1,4 @@
-# AI Engineering Knowledge Assistant
+# KnovaultAI — AI Powered Knowledge Assistant
 
 Production-style RAG knowledge base: upload documents, hybrid semantic + keyword search over **PostgreSQL + pgvector**, and grounded answers via **OpenRouter**.
 
@@ -38,12 +38,44 @@ The **LLM gateway auto-routes** between named plugs (`LLM_ROUTING_*` in `.env`) 
 
 See [.env.example](.env.example). Important keys:
 
-- `DATABASE_URL` — Postgres (default matches `docker-compose.yml`)
-- `LOCAL_STORAGE_DIR` — uploaded file blobs (Docker volume `document_storage`)
+- `DATABASE_URL` — Postgres (default matches `docker-compose.yml`; use Supabase URI when deployed)
+- `LOCAL_STORAGE_DIR` — uploaded file blobs when `STORAGE_BACKEND=local` (Docker volume `document_storage`)
+- `STORAGE_BACKEND` — `local` (default) or `supabase` for Supabase Storage
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET` — required when using Supabase Storage (server-only; never expose in the frontend)
 - `EMBEDDING_MODEL` / `EMBEDDING_DIM` — sentence-transformers (default `all-MiniLM-L6-v2`, 384-d)
 - `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL` override
 - `LLM_ROUTING_DEFAULT_PLUG`, `LLM_ROUTING_QUALITY_PLUG`, `LLM_ROUTING_FAST_PLUG` — auto-routing
 - `LLM_ROUTING_STRONG_SIMILARITY_THRESHOLD` — minimum semantic similarity for strong/fast routing (default `0.35`)
+
+## Supabase (deploy / demo)
+
+Hybrid setup: **Docker Compose** keeps local Postgres + `STORAGE_BACKEND=local`. For a hosted demo, point the API at Supabase:
+
+1. Create a [Supabase](https://supabase.com) project.
+2. **Database → Extensions** → enable **`vector`**.
+3. **Storage** → create a **private** bucket (default name `documents`, or set `SUPABASE_STORAGE_BUCKET`).
+4. **Project Settings → Database** → copy the **direct** connection URI (port 5432) into `DATABASE_URL` with `?sslmode=require`.
+5. **Project Settings → API** → copy **Project URL** and **service role** key into `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (API server only).
+6. Set `STORAGE_BACKEND=supabase` and run migrations once: `alembic upgrade head`.
+
+Uploaded files are stored under object keys `{kb_id}/{uuid}/{filename}` in the bucket; chunk embeddings remain in Postgres.
+
+## Try demo (hosted portfolio)
+
+Visitors use **Try demo** on the login page (passwordless JWT for a shared user). Upload and ingest are blocked for demo sessions (`can_upload: false` in JWT). You curate content by signing in with the **demo username and password** (same Supabase `DATABASE_URL` and storage from your machine).
+
+**Hosted API `.env`:** `DEMO_LOGIN_ENABLED=true`, `DEMO_USERNAME=demo`, `ALLOW_PUBLIC_REGISTRATION=false`.
+
+**Frontend build env:** `VITE_DEMO_LOGIN_ENABLED=true`, `VITE_ALLOW_REGISTRATION=false`.
+
+**Once per environment:**
+
+```bash
+alembic upgrade head
+DEMO_PASSWORD='your-strong-secret' python scripts/seed_demo_user.py
+```
+
+Then locally: log in as `demo` with that password, create knowledge bases, and upload documents—they appear for Try demo users.
 
 ## Migrations
 

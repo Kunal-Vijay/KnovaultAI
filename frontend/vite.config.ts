@@ -9,6 +9,7 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const apiTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:8000'
+  console.log(`[vite] /api proxy → ${apiTarget}`)
 
   return {
     plugins: [react(), tailwindcss()],
@@ -20,6 +21,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
       port: 5173,
+      strictPort: true,
       proxy: {
         '/api': {
           target: apiTarget,

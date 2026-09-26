@@ -6,11 +6,17 @@ from app.db.session import get_db
 from app.schemas.user import User, UserCreate
 from app.services import user as user_service
 from app.core.security import get_current_active_user # Import for authorization
+from app.core.config import settings
 
 router = APIRouter()
 
 @router.post("/users/", response_model=User, status_code=status.HTTP_201_CREATED)
 def create_new_user(user: UserCreate, db: Session = Depends(get_db)):
+    if not settings.ALLOW_PUBLIC_REGISTRATION:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public registration is disabled",
+        )
     db_user = user_service.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")

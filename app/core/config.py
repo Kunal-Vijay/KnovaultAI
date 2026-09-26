@@ -1,9 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "AI Engineering Knowledge Assistant"
+    PROJECT_NAME: str = "KnovaultAI — AI Powered Knowledge Assistant"
     PROJECT_VERSION: str = "0.1.0"
-    PROJECT_DESCRIPTION: str = "A production-style AI Engineering Knowledge Assistant"
+    PROJECT_DESCRIPTION: str = "KnovaultAI: upload documents, search with hybrid RAG, and get grounded answers."
     DATABASE_URL: str
 
     # Embeddings
@@ -12,6 +12,10 @@ class Settings(BaseSettings):
 
     # Ingestion / storage
     LOCAL_STORAGE_DIR: str = "./data/documents"
+    STORAGE_BACKEND: str = "local"  # local | supabase
+    SUPABASE_URL: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_STORAGE_BUCKET: str = "documents"
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
 
@@ -43,6 +47,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "YOUR_SUPER_SECRET_KEY" # IMPORTANT: Change this in production!
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 # For JWT token expiration
+
+    # Demo / portfolio login (passwordless JWT for shared demo user)
+    DEMO_LOGIN_ENABLED: bool = False
+    DEMO_USERNAME: str = "demo"
+    ALLOW_PUBLIC_REGISTRATION: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

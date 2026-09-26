@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/hooks/useAuth'
 import { useDocuments, useUploadDocument } from './hooks'
 
 const ALLOWED_EXT = ['.pdf', '.txt', '.md', '.markdown', '.docx']
@@ -15,6 +16,7 @@ function isAllowed(file: File) {
 }
 
 export function DocumentsPanel({ kbId }: { kbId: number }) {
+  const { canUpload } = useAuth()
   const { data: docs, isLoading, error } = useDocuments(kbId)
   const upload = useUploadDocument(kbId)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -46,34 +48,38 @@ export function DocumentsPanel({ kbId }: { kbId: number }) {
 
   return (
     <div className="space-y-4">
-      <Card
-        className={`border-dashed ${dragOver ? 'border-primary bg-accent/50' : ''}`}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setDragOver(true)
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={onDrop}
-      >
-        <CardHeader>
-          <CardTitle className="text-base">Upload documents</CardTitle>
-          <CardDescription>Drag and drop or choose PDF, TXT, Markdown, or DOCX files.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <input
-            ref={inputRef}
-            type="file"
-            className="hidden"
-            multiple
-            accept=".pdf,.txt,.md,.markdown,.docx"
-            onChange={(e) => e.target.files && handleFiles(e.target.files)}
-          />
-          <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} disabled={upload.isPending}>
-            <Upload className="h-4 w-4" />
-            Choose files
-          </Button>
-        </CardContent>
-      </Card>
+      {canUpload ? (
+        <Card
+          className={`border-dashed ${dragOver ? 'border-primary bg-accent/50' : ''}`}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+        >
+          <CardHeader>
+            <CardTitle className="text-base">Upload documents</CardTitle>
+            <CardDescription>Drag and drop or choose PDF, TXT, Markdown, or DOCX files.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <input
+              ref={inputRef}
+              type="file"
+              className="hidden"
+              multiple
+              accept=".pdf,.txt,.md,.markdown,.docx"
+              onChange={(e) => e.target.files && handleFiles(e.target.files)}
+            />
+            <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} disabled={upload.isPending}>
+              <Upload className="h-4 w-4" />
+              Choose files
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <p className="text-sm text-muted-foreground">Demo mode: documents are pre-loaded.</p>
+      )}
 
       {isLoading && <Skeleton className="h-40 w-full" />}
       {error && <p className="text-destructive">{error.message}</p>}

@@ -56,4 +56,4 @@ app.include_router(auth_router, prefix="/v1", tags=["Authentication"])
 
 @app.get("/", tags=["Root"])
 async def read_root():
-    return {"message": "Welcome to AI Engineering Knowledge Assistant"}
+    return {"message": f"Welcome to {settings.PROJECT_NAME}"}

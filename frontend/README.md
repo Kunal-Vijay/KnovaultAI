@@ -4,6 +4,8 @@ React 19 + Vite + TypeScript + Tailwind CSS + shadcn-style UI.
 
 ## Development
 
+Requires **Node.js 20.12+** (Vite 8 / Rolldown uses `util.styleText`). With [nvm](https://github.com/nvm-sh/nvm): `nvm use` in this directory (see `.nvmrc`).
+
 ```bash
 cd frontend
 cp .env.example .env

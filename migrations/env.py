@@ -28,8 +28,10 @@ target_metadata = Base.metadata
 # for example, config.get_main_option("myvariable")
 
 def get_database_url() -> str:
-    # Use DATABASE_URL from environment variable first, then alembic.ini
-    return os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    from app.db.url import database_url_with_ssl_query, normalize_database_url
+
+    raw = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url") or ""
+    return database_url_with_ssl_query(normalize_database_url(raw))
 
 
 def run_migrations_offline() -> None:

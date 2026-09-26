@@ -25,6 +25,10 @@ services:
       - OPENROUTER_MODEL=${OPENROUTER_MODEL-}
       - OPENROUTER_FALLBACK_MODELS=${OPENROUTER_FALLBACK_MODELS:-}
       - OPENROUTER_BYOK_PROVIDERS=${OPENROUTER_BYOK_PROVIDERS:-google-ai-studio}
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-local}
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-documents}
     depends_on:
       - db
       - otel-collector # Depend on OTel collector for traces

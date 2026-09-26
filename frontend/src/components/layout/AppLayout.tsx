@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/hooks/useAuth'
+import { APP_NAME, APP_TAGLINE } from '@/lib/branding'
 import { cn } from '@/lib/utils'
 
 export function AppLayout() {
@@ -30,9 +31,12 @@ export function AppLayout() {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
         )}
       >
-        <div className="mb-6 flex items-center gap-2 font-semibold text-primary">
-          <BookOpen className="h-5 w-5" />
-          <span>Knowledge Assistant</span>
+        <div className="mb-6">
+          <div className="flex items-center gap-2 font-semibold text-primary">
+            <BookOpen className="h-5 w-5 shrink-0" />
+            <span>{APP_NAME}</span>
+          </div>
+          <p className="mt-1 pl-7 text-xs text-muted-foreground">{APP_TAGLINE}</p>
         </div>
         <nav className="flex flex-col gap-1 text-sm">
           <Link
@@ -66,9 +70,8 @@ export function AppLayout() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              AI Engineering Knowledge Assistant
-            </span>
+            <span className="hidden text-sm text-muted-foreground sm:inline">{APP_TAGLINE}</span>
+            <span className="text-sm text-muted-foreground sm:hidden">{APP_NAME}</span>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

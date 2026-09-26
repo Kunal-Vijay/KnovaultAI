@@ -64,7 +64,7 @@ export function QueryHistoryDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pipeline</CardTitle>
+          <CardTitle className="text-base">Overall View</CardTitle>
         </CardHeader>
         <CardContent>
           <TraceExplorer trace={trace} isLoading={traceLoading} error={traceError} />

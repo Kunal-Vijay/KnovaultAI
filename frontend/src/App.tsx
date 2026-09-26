@@ -22,6 +22,8 @@ const queryClient = new QueryClient({
   },
 })
 
+const allowRegistration = import.meta.env.VITE_ALLOW_REGISTRATION === 'true'
+
 function UnauthorizedListener() {
   const navigate = useNavigate()
   const { logout } = useAuth()
@@ -50,7 +52,15 @@ function AppRoutes() {
           />
           <Route
             path="/register"
-            element={isLoading ? null : isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />}
+            element={
+              !allowRegistration ? (
+                <Navigate to="/login" replace />
+              ) : isLoading ? null : isAuthenticated ? (
+                <Navigate to="/" replace />
+              ) : (
+                <RegisterPage />
+              )
+            }
           />
         </Route>
 
