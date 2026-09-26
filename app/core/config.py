@@ -35,7 +35,8 @@ class Settings(BaseSettings):
 
     QUERY_HISTORY_RETENTION_DAYS: int = 0
 
-    # Observability settings (empty = no OTLP export; set in Docker Compose for local otel-collector)
+    # Observability (Render/PaaS: leave OTEL_TRACES_ENABLED=false and endpoint empty)
+    OTEL_TRACES_ENABLED: bool = False
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
     OTEL_SERVICE_NAME: str = "fastapi-app"
 

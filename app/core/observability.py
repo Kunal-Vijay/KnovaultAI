@@ -4,7 +4,7 @@ import sys
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.metrics import MeterProvider
@@ -46,15 +46,21 @@ OTEL_RESOURCE_ATTRIBUTES = {
 }
 
 def configure_opentelemetry_tracing(app):
+    log = logging.getLogger(__name__)
+    if not settings.OTEL_TRACES_ENABLED:
+        log.info("OpenTelemetry tracing disabled (OTEL_TRACES_ENABLED=false).")
+        return
+
     endpoint = (settings.OTEL_EXPORTER_OTLP_ENDPOINT or "").strip()
     if not endpoint or endpoint.lower() in {"none", "false", "disabled", "off"}:
-        logging.getLogger(__name__).info("OpenTelemetry OTLP export disabled (no collector endpoint).")
+        log.info("OpenTelemetry OTLP export disabled (no collector endpoint).")
         return
 
     resource = Resource.create(OTEL_RESOURCE_ATTRIBUTES)
 
     otlp_exporter = OTLPSpanExporter(endpoint=endpoint)
-    span_processor = SimpleSpanProcessor(otlp_exporter)
+    # Batch export avoids blocking HTTP responses on collector outages (SimpleSpanProcessor retries sync).
+    span_processor = BatchSpanProcessor(otlp_exporter)
 
     provider = TracerProvider(resource=resource)
     provider.add_span_processor(span_processor)

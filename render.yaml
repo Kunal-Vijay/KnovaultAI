@@ -10,7 +10,7 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /v1/health
     envVars:
-      - key: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: ""
+      - key: OTEL_TRACES_ENABLED
+        value: "false"
       - key: PYTHON_VERSION
         value: "3.12.3"
