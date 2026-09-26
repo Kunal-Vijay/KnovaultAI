@@ -77,6 +77,20 @@ DEMO_PASSWORD='your-strong-secret' python scripts/seed_demo_user.py
 
 Then locally: log in as `demo` with that password, create knowledge bases, and upload documents—they appear for Try demo users.
 
+## Render (API) checklist
+
+**502 / “unable to handle this request”** means Render’s proxy cannot reach your app process.
+
+1. **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (not `127.0.0.1`, not a fixed port).
+2. **Health check path:** `/v1/health` (liveness only; DB is `/v1/ready`).
+3. **Env values:** no surrounding `"` quotes in the Render dashboard (especially `DATABASE_URL`).
+4. **`OTEL_EXPORTER_OTLP_ENDPOINT`:** leave unset or empty on Render.
+5. **`SECRET_KEY`:** random string (e.g. `openssl rand -hex 32`); do not reuse the Supabase service role key.
+6. **RAM:** PyTorch + embeddings often need **Starter** (512MB free tier may OOM or never become ready). See [render.yaml](render.yaml).
+7. **Logs:** Render → Logs → look for `Out of memory`, `Killed`, or Python tracebacks on boot.
+
+After deploy: `curl -s https://YOUR-SERVICE.onrender.com/v1/health`
+
 ## Migrations
 
 ```bash

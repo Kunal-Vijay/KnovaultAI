@@ -3,6 +3,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 def normalize_database_url(url: str) -> str:
     """Normalize postgres:// to postgresql:// for SQLAlchemy."""
+    url = url.strip().strip('"').strip("'")
     if url.startswith("postgres://"):
         return "postgresql://" + url[len("postgres://") :]
     return url

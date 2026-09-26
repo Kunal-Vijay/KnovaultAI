@@ -12,6 +12,13 @@ def test_normalize_database_url_postgres_scheme():
     )
 
 
+def test_normalize_database_url_strips_quotes():
+    assert (
+        normalize_database_url('"postgresql://u:p@host/db"')
+        == "postgresql://u:p@host/db"
+    )
+
+
 def test_sqlalchemy_connect_args_supabase_host():
     url = "postgresql://u:p@db.abc.supabase.co:5432/postgres"
     assert sqlalchemy_connect_args(url) == {"sslmode": "require"}
