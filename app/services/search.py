@@ -101,6 +101,23 @@ class HybridSearchService:
 
                     fused_results = reciprocal_rank_fusion(all_ranked_lists, k=request.rrf_k)
 
+                    semantic_by_id = {
+                        item["id"]: float(item["score"])
+                        for item in semantic_ranked_list
+                    }
+                    top_semantic = (
+                        max(semantic_by_id.values()) if semantic_by_id else None
+                    )
+                    top_fusion = (
+                        float(fused_results[0].get("fused_score", 0.0))
+                        if fused_results
+                        else None
+                    )
+                    if top_semantic is not None:
+                        span.set_attribute("top_semantic_similarity", top_semantic)
+                    if top_fusion is not None:
+                        span.set_attribute("top_fusion_score", top_fusion)
+
                     for item_data in fused_results:
                         chunk_schema_data = {
                             "id": item_data["id"],
@@ -112,11 +129,14 @@ class HybridSearchService:
                             "chunk_index": item_data.get("chunk_index"),
                             "created_at": item_data.get("created_at"),
                         }
+                        chunk_id = item_data["id"]
                         chunk = DocumentChunk(**chunk_schema_data)
+                        sem = semantic_by_id.get(chunk_id)
                         final_search_results.append(
                             SearchResultItem(
                                 chunk=chunk,
                                 score=float(item_data.get("fused_score", 0.0)),
+                                semantic_score=sem,
                             )
                         )
                     span.set_attribute("reranked_results_count", len(final_search_results))

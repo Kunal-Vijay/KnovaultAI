@@ -24,8 +24,15 @@ docker compose exec fastapi_app alembic upgrade head
 1. Open http://localhost:5173 and **Register** / **Login**.
 2. Create a **Knowledge base**.
 3. **Documents** tab: upload PDF, TXT, Markdown, or DOCX. Status moves `uploaded` → `parsing` → `indexing` → `completed` (list auto-refreshes while processing).
-4. **Ask** tab: question about your upload (requires at least one indexed document).
+4. **Ask** tab: question about your upload (requires at least one indexed document). Each answer shows **model**, **tokens**, **estimated cost**, and a **View pipeline** link.
 5. **Search** tab: inspect hybrid retrieval scores.
+6. **History** tab: past queries with pipeline traces (retrieval → LLM spans).
+
+## Query history and pipeline observability
+
+Each `/v1/rag` call persists a `query_executions` row and nested `pipeline_spans` (hybrid search, LLM gateway, etc.). The UI **History** tab lists past questions; opening a run shows an interactive **pipeline explorer** (Graph / Waterfall / Events / Raw) aligned with GodsEye-Dashboard—click a span node to inspect inputs, outputs, tokens, and routing metadata.
+
+The **LLM gateway auto-routes** between named plugs (`LLM_ROUTING_*` in `.env`) using **semantic similarity** from retrieval (not RRF fusion score), plus question length—no manual model picker in the UI.
 
 ## Environment variables
 
@@ -34,7 +41,9 @@ See [.env.example](.env.example). Important keys:
 - `DATABASE_URL` — Postgres (default matches `docker-compose.yml`)
 - `LOCAL_STORAGE_DIR` — uploaded file blobs (Docker volume `document_storage`)
 - `EMBEDDING_MODEL` / `EMBEDDING_DIM` — sentence-transformers (default `all-MiniLM-L6-v2`, 384-d)
-- `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` — RAG generation (`DEFAULT_LLM_PROVIDER=openrouter`)
+- `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL` override
+- `LLM_ROUTING_DEFAULT_PLUG`, `LLM_ROUTING_QUALITY_PLUG`, `LLM_ROUTING_FAST_PLUG` — auto-routing
+- `LLM_ROUTING_STRONG_SIMILARITY_THRESHOLD` — minimum semantic similarity for strong/fast routing (default `0.35`)
 
 ## Migrations
 

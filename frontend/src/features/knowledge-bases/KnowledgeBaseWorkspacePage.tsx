@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DocumentsPanel } from '@/features/documents/DocumentsPanel'
 import { AskPanel } from '@/features/chat/AskPanel'
 import { SearchPanel } from '@/features/search/SearchPanel'
+import { HistoryPanel } from '@/features/history/HistoryPanel'
 import { useKnowledgeBase } from './hooks'
 
 export function KnowledgeBaseWorkspacePage() {
@@ -40,6 +41,7 @@ export function KnowledgeBaseWorkspacePage() {
           <TabsTrigger value="ask">Ask</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="search">Search</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
         <TabsContent value="ask">
           <AskPanel kbId={kbId} />
@@ -49,6 +51,9 @@ export function KnowledgeBaseWorkspacePage() {
         </TabsContent>
         <TabsContent value="search">
           <SearchPanel kbId={kbId} />
+        </TabsContent>
+        <TabsContent value="history">
+          <HistoryPanel kbId={kbId} />
         </TabsContent>
       </Tabs>
     </div>

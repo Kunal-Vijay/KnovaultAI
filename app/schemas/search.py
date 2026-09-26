@@ -14,6 +14,7 @@ class SearchRequest(BaseModel):
 class SearchResultItem(BaseModel):
     chunk: DocumentChunk
     score: float
+    semantic_score: Optional[float] = None
 
 class SearchResponse(BaseModel):
     results: List[SearchResultItem]

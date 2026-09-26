@@ -21,7 +21,8 @@ services:
       - OTEL_SERVICE_NAME=fastapi-app
       - DEFAULT_LLM_PROVIDER=openrouter
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemma-4-26b-a4b-it:free}
+      # Use ${VAR-default} (not :-) so OPENROUTER_MODEL= in .env disables global override.
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL-}
       - OPENROUTER_FALLBACK_MODELS=${OPENROUTER_FALLBACK_MODELS:-}
       - OPENROUTER_BYOK_PROVIDERS=${OPENROUTER_BYOK_PROVIDERS:-google-ai-studio}
     depends_on:

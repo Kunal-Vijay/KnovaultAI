@@ -87,9 +87,22 @@ export interface Citation {
   section?: string | null
 }
 
+export interface TokenUsage {
+  prompt_tokens?: number | null
+  completion_tokens?: number | null
+  total_tokens?: number | null
+}
+
 export interface RAGResponse {
   answer: string
   citations: Citation[]
+  execution_id?: string | null
+  routed_model?: string | null
+  routing_policy?: string | null
+  routing_reason?: string | null
+  usage?: TokenUsage | null
+  estimated_cost_usd?: number | null
+  latency_ms?: number | null
 }
 
 export interface ApiMeta {

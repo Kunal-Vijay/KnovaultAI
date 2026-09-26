@@ -12,6 +12,7 @@ import { RegisterPage } from '@/features/auth/RegisterPage'
 import { CreateKnowledgeBasePage } from '@/features/knowledge-bases/CreateKnowledgeBasePage'
 import { DashboardPage } from '@/features/knowledge-bases/DashboardPage'
 import { KnowledgeBaseWorkspacePage } from '@/features/knowledge-bases/KnowledgeBaseWorkspacePage'
+import { QueryHistoryDetailPage } from '@/features/history/QueryHistoryDetailPage'
 import { AuthProvider, useAuth } from '@/hooks/useAuth'
 import { setUnauthorizedHandler } from '@/lib/api-client'
 
@@ -63,6 +64,7 @@ function AppRoutes() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/knowledge-bases/new" element={<CreateKnowledgeBasePage />} />
           <Route path="/knowledge-bases/:kbId" element={<KnowledgeBaseWorkspacePage />} />
+          <Route path="/knowledge-bases/:kbId/history/:executionId" element={<QueryHistoryDetailPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

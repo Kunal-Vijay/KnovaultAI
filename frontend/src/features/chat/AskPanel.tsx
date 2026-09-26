@@ -1,7 +1,9 @@
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
-import Markdown from 'react-markdown'
+import { RagAnswerMarkdown } from '@/components/RagAnswerMarkdown'
 import { Send } from 'lucide-react'
 import { toast } from 'sonner'
+import { CitationBadges } from '@/components/CitationBadges'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +13,7 @@ import { CorrelationStrip } from '@/components/CorrelationStrip'
 import { useAuth } from '@/hooks/useAuth'
 import type { ApiMeta, RAGResponse, SearchResultItem } from '@/types/api'
 import { askRag } from './api'
+import { ApiError } from '@/lib/api-client'
 import { searchKnowledge } from '@/features/search/api'
 import { useDocuments } from '@/features/documents/hooks'
 
@@ -52,10 +55,19 @@ export function AskPanel({ kbId }: { kbId: number }) {
       })
       setMessages((m) => [...m, { role: 'assistant', content: data.answer, rag: data, meta }])
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to get answer')
+      const detail =
+        err instanceof ApiError
+          ? err.detail
+          : err instanceof Error
+            ? err.message
+            : 'Failed to get answer'
+      toast.error(detail)
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: 'Sorry, I could not generate an answer. Check API keys and backend logs.' },
+        {
+          role: 'assistant',
+          content: `Sorry, I could not generate an answer. ${detail}`,
+        },
       ])
     } finally {
       setLoading(false)
@@ -134,19 +146,33 @@ export function AskPanel({ kbId }: { kbId: number }) {
               <CardTitle className="text-sm font-medium">{msg.role === 'user' ? 'You' : 'Answer'}</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-              {msg.role === 'assistant' ? <Markdown>{msg.content}</Markdown> : <p>{msg.content}</p>}
+              {msg.role === 'assistant' ? (
+                <RagAnswerMarkdown content={msg.content} citations={msg.rag?.citations} />
+              ) : (
+                <p>{msg.content}</p>
+              )}
               {msg.rag && (
                 <div className="mt-4 space-y-2 not-prose">
                   <p className="text-sm font-medium">Sources</p>
-                  <div className="flex flex-wrap gap-2">
-                    {msg.rag.citations.map((c) => (
-                      <Badge key={c.chunk_id} variant="outline">
-                        {c.source ?? `doc ${c.document_id}`}
-                        {c.page_number != null && ` · p.${c.page_number}`}
-                      </Badge>
-                    ))}
-                  </div>
+                  <CitationBadges citations={msg.rag.citations} />
                   {msg.meta && <CorrelationStrip meta={msg.meta} />}
+                  {msg.rag.routed_model && (
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <Badge variant="secondary">{msg.rag.routed_model}</Badge>
+                      {msg.rag.usage?.total_tokens != null && (
+                        <Badge variant="outline">{msg.rag.usage.total_tokens} tokens</Badge>
+                      )}
+                      {msg.rag.estimated_cost_usd != null && (
+                        <Badge variant="outline">${msg.rag.estimated_cost_usd.toFixed(4)}</Badge>
+                      )}
+                      {msg.rag.routing_reason && <span>{msg.rag.routing_reason}</span>}
+                    </div>
+                  )}
+                  {msg.rag.execution_id && (
+                    <Button type="button" variant="link" size="sm" className="h-auto p-0" asChild>
+                      <Link to={`/knowledge-bases/${kbId}/history/${msg.rag.execution_id}`}>View pipeline</Link>
+                    </Button>
+                  )}
                   <Button type="button" variant="outline" size="sm" onClick={() => viewContext(messages[i - 1]?.content ?? '')}>
                     View retrieved context
                   </Button>

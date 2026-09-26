@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.llm.errors import LLMError, ModelAuthenticationError, ModelRateLimitError
@@ -16,6 +16,7 @@ router = APIRouter()
 async def get_rag_answer(
     request: RAGRequest,
     user_id: int,
+    http_request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -31,8 +32,15 @@ async def get_rag_answer(
             detail="Knowledge Base not found for this user or unauthorized",
         )
 
+    request_id = http_request.headers.get("x-request-id")
+
     try:
-        return await rag_service.get_answer(db, request)
+        return await rag_service.get_answer(
+            db,
+            request,
+            user_id=user_id,
+            request_id=request_id,
+        )
     except ModelAuthenticationError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except ModelRateLimitError as exc:

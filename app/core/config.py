@@ -18,11 +18,18 @@ class Settings(BaseSettings):
     # LLM Gateway settings
     DEFAULT_LLM_PROVIDER: str = "openrouter"
     OPENROUTER_API_KEY: str = ""
-    OPENROUTER_MODEL: str = "google/gemma-4-26b-a4b-it:free"
+    OPENROUTER_MODEL: str = ""
     OPENROUTER_FALLBACK_MODELS: str = ""
     OPENROUTER_BYOK_PROVIDERS: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     OPENROUTER_TIMEOUT_SECONDS: float = 120.0
+
+    LLM_ROUTING_DEFAULT_PLUG: str = "gemma-26b"
+    LLM_ROUTING_QUALITY_PLUG: str = "gemma-31b"
+    LLM_ROUTING_FAST_PLUG: str = "gemma-26b"
+    LLM_ROUTING_STRONG_SIMILARITY_THRESHOLD: float = 0.35
+
+    QUERY_HISTORY_RETENTION_DAYS: int = 0
 
     # Observability settings
     OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://otel-collector:4317"
