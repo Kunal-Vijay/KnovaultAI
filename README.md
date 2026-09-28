@@ -8,7 +8,7 @@ Production-style RAG knowledge assistant: upload documents, hybrid semantic and 
 
 ## Demo video
 
-[YouTube demo](https://www.youtube.com/watch?v=C8h9xeHbw98)
+[![Watch the KnoVaultAI demo on YouTube](https://img.youtube.com/vi/C8h9xeHbw98/hqdefault.jpg)](https://www.youtube.com/watch?v=C8h9xeHbw98)
 
 ## Tech stack
 
