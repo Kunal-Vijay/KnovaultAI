@@ -1,16 +1,37 @@
-# KnovaultAI — AI Powered Knowledge Assistant
+# KnoVaultAI
 
-Production-style RAG knowledge base: upload documents, hybrid semantic + keyword search over **PostgreSQL + pgvector**, and grounded answers via **OpenRouter**.
+Production-style RAG knowledge assistant: upload documents, hybrid semantic and keyword search over **PostgreSQL + pgvector**, and grounded answers through an **OpenRouter** LLM gateway with pipeline observability.
 
-## Quick start (Docker)
+## Project architecture
+
+![KnoVaultAI architecture](docs/PROJECT_ARCHITECTURE.png)
+
+## Demo video
+
+[YouTube demo](https://www.youtube.com/watch?v=C8h9xeHbw98)
+
+## Tech stack
+
+- **Backend:** Python, FastAPI, SQLAlchemy, Alembic
+- **Frontend:** React 19, Vite, TypeScript, TanStack Query, Radix UI
+- **Data:** PostgreSQL 16, pgvector, hybrid semantic + full-text (RRF)
+- **ML / RAG:** sentence-transformers embeddings; PDF, DOCX, and other document parsing
+- **LLM:** OpenRouter gateway with env-based routing plugs
+- **Observability:** OpenTelemetry, Prometheus, Grafana (via Docker Compose)
+- **Infra / CI:** Docker Compose; GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml))
+
+## Setup and run
+
+**Prerequisites:** Docker and Docker Compose; set `OPENROUTER_API_KEY` in `.env` for live RAG answers.
 
 ```bash
 cp .env.example .env
-# Set OPENROUTER_API_KEY in .env for real RAG answers
+# Set OPENROUTER_API_KEY in .env
 
 docker compose up --build -d
-docker compose exec fastapi_app alembic upgrade head
 ```
+
+After the stack is up, run database migrations once (see [Migrations](#migrations)).
 
 | Service | URL |
 |--------|-----|
@@ -19,20 +40,7 @@ docker compose exec fastapi_app alembic upgrade head
 | Frontend (dev) | http://localhost:5173 |
 | Grafana | http://localhost:3000 (admin/admin) |
 
-## Demo flow
-
-1. Open http://localhost:5173 and **Register** / **Login**.
-2. Create a **Knowledge base**.
-3. **Documents** tab: upload PDF, TXT, Markdown, or DOCX. Status moves `uploaded` → `parsing` → `indexing` → `completed` (list auto-refreshes while processing).
-4. **Ask** tab: question about your upload (requires at least one indexed document). Each answer shows **model**, **tokens**, **estimated cost**, and a **View pipeline** link.
-5. **Search** tab: inspect hybrid retrieval scores.
-6. **History** tab: past queries with pipeline traces (retrieval → LLM spans).
-
-## Query history and pipeline observability
-
-Each `/v1/rag` call persists a `query_executions` row and nested `pipeline_spans` (hybrid search, LLM gateway, etc.). The UI **History** tab lists past questions; opening a run shows an interactive **pipeline explorer** (Graph / Waterfall / Events / Raw) aligned with GodsEye-Dashboard—click a span node to inspect inputs, outputs, tokens, and routing metadata.
-
-The **LLM gateway auto-routes** between named plugs (`LLM_ROUTING_*` in `.env`) using **semantic similarity** from retrieval (not RRF fusion score), plus question length—no manual model picker in the UI.
+**First use:** open the frontend → register or log in → create a knowledge base → upload documents on the **Documents** tab → ask questions on the **Ask** tab.
 
 ## Environment variables
 
@@ -46,79 +54,6 @@ See [.env.example](.env.example). Important keys:
 - `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL` override
 - `LLM_ROUTING_DEFAULT_PLUG`, `LLM_ROUTING_QUALITY_PLUG`, `LLM_ROUTING_FAST_PLUG` — auto-routing
 - `LLM_ROUTING_STRONG_SIMILARITY_THRESHOLD` — minimum semantic similarity for strong/fast routing (default `0.35`)
-
-## Supabase (deploy / demo)
-
-Hybrid setup: **Docker Compose** keeps local Postgres + `STORAGE_BACKEND=local`. For a hosted demo, point the API at Supabase:
-
-1. Create a [Supabase](https://supabase.com) project.
-2. **Database → Extensions** → enable **`vector`**.
-3. **Storage** → create a **private** bucket (default name `documents`, or set `SUPABASE_STORAGE_BUCKET`).
-4. **Project Settings → Database** → copy the **direct** connection URI (port 5432) into `DATABASE_URL` with `?sslmode=require`.
-5. **Project Settings → API** → copy **Project URL** and **service role** key into `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (API server only).
-6. Set `STORAGE_BACKEND=supabase` and run migrations once: `alembic upgrade head`.
-
-Uploaded files are stored under object keys `{kb_id}/{uuid}/{filename}` in the bucket; chunk embeddings remain in Postgres.
-
-## Try demo (hosted portfolio)
-
-Visitors use **Try demo** on the login page (passwordless JWT for a shared user). Upload and ingest are blocked for demo sessions (`can_upload: false` in JWT). You curate content by signing in with the **demo username and password** (same Supabase `DATABASE_URL` and storage from your machine).
-
-**Hosted API `.env`:** `DEMO_LOGIN_ENABLED=true`, `DEMO_USERNAME=demo`, `ALLOW_PUBLIC_REGISTRATION=false`.
-
-**Frontend build env:** `VITE_DEMO_LOGIN_ENABLED=true`, `VITE_ALLOW_REGISTRATION=false`.
-
-**Once per environment:**
-
-```bash
-alembic upgrade head
-DEMO_PASSWORD='your-strong-secret' python scripts/seed_demo_user.py
-```
-
-Then locally: log in as `demo` with that password, create knowledge bases, and upload documents—they appear for Try demo users.
-
-## Render (API) checklist
-
-**502 / “unable to handle this request”** means Render’s proxy cannot reach your app process.
-
-1. **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (not `127.0.0.1`, not a fixed port).
-2. **Health check path:** `/v1/health` (liveness only; DB is `/v1/ready`).
-3. **Env values:** no surrounding `"` quotes in the Render dashboard (especially `DATABASE_URL`).
-4. **`DATABASE_URL`:** use Supabase **Session pooler** URI (Dashboard → Connect → Session mode) if `/v1/ready` shows IPv6 / “Network is unreachable” to `db.*.supabase.co`. User must be `postgres.<project-ref>`.
-5. **`OTEL_EXPORTER_OTLP_ENDPOINT`:** leave unset or empty on Render.
-6. **`SECRET_KEY`:** random string (e.g. `openssl rand -hex 32`); do not reuse the Supabase service role key.
-7. **RAM:** PyTorch + embeddings often need **Starter** (512MB free tier may OOM or never become ready). See [render.yaml](render.yaml).
-8. **Logs:** Render → Logs → look for `Out of memory`, `Killed`, or Python tracebacks on boot.
-
-After deploy: `curl -s https://YOUR-SERVICE.onrender.com/v1/health`
-
-## Render (frontend static site)
-
-1. **Backend CORS:** On the API service, set `CORS_ORIGINS` to your frontend URL (comma-separated), e.g.  
-   `https://knovaultai.onrender.com,http://localhost:5173`  
-   Use the **static site** URL once it exists (update and redeploy API if you add the frontend later).
-
-2. **New Static Site** (Render Dashboard → New → Static Site → same Git repo).
-
-   | Setting | Value |
-   |--------|--------|
-   | Root directory | `frontend` |
-   | Build command | `npm install && npm run build` |
-   | Publish directory | `dist` |
-
-3. **Environment variables** (build-time; required for production):
-
-   | Key | Example |
-   |-----|---------|
-   | `VITE_API_BASE_URL` | `https://YOUR-API.onrender.com/v1` |
-   | `VITE_DEMO_LOGIN_ENABLED` | `true` |
-   | `VITE_ALLOW_REGISTRATION` | `false` |
-
-4. **Deploy.** `public/_redirects` sends all routes to `index.html` for React Router.
-
-5. **Verify:** open the static URL → **Try demo** → dashboard loads; browser Network tab shows requests to `YOUR-API.onrender.com/v1/...` (not `/api` on the static host).
-
-**Alternatives:** Vercel/Netlify/Cloudflare Pages — same root `frontend`, same build env vars; add an SPA fallback (`/* → /index.html`) if the host does not read `_redirects`.
 
 ## Migrations
 
@@ -144,12 +79,3 @@ Requires indexed content and `OPENROUTER_API_KEY` for non-mock answers:
 make run-evals
 make save-baseline
 ```
-
-## Architecture notes
-
-- **Vectors** live in Postgres (`document_chunks.embedding`) with HNSW (cosine).
-- **Full-text** uses a generated `tsvector` column + GIN index.
-- **Retrieval** fuses semantic + keyword ranks with RRF.
-- **Ingestion** runs in FastAPI `BackgroundTasks` (parse → chunk → batch embed → persist).
-
-Refer to [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) for the long-term phased roadmap.

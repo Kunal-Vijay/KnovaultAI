@@ -14,6 +14,7 @@ from app.db.session import SessionLocal
 from app.ingestion.chunkers import get_chunker
 from app.ingestion.metadata_extractors import get_metadata_extractor
 from app.ingestion.parsers import get_parser
+from app.ingestion.sanitize import sanitize_text_for_postgres
 from app.models.document import Document
 from app.models.document_chunk import DocumentChunk
 
@@ -79,7 +80,7 @@ def ingest_document_sync(doc_id: int, file_content: bytes) -> None:
                 span.set_attribute("document.mime_type", mime_type)
 
                 parser = get_parser(mime_type)
-                text_content = parser.parse(content)
+                text_content = sanitize_text_for_postgres(parser.parse(content))
 
             with tracer.start_as_current_span("extract_metadata"):
                 metadata_extractor = get_metadata_extractor()
